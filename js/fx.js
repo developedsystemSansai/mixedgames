@@ -3,7 +3,7 @@
   const $ = (s) => document.querySelector(s);
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const img = (n) => `<img class="gi" src="assets/game/${n}.webp" alt="" decoding="async">`;
+  const img = (n) => `<img class="gi" src="assets/game/${n}.webp?v=2" alt="" decoding="async">`;
 
   /* ---------- เสียง ---------- */
   let ac = null, muted = false;
@@ -46,6 +46,58 @@
   sbtn.addEventListener('click', () => { muted = !muted; try { localStorage.setItem('mg.mute', muted ? '1' : '0'); } catch {} speaker(); play('pop'); });
   speaker();
   document.addEventListener('pointerdown', () => ctx(), { once: true });
+
+  /* ---------- เพลงประกอบ (สังเคราะห์ด้วย WebAudio วนลูป) ---------- */
+  let mOn = true, mBus = null, mTimer = null, mNext = 0, mStep = 0;
+  try { mOn = localStorage.getItem('mg.music') !== '0'; } catch {}
+  const BEAT = 60 / 108 / 2; /* โน้ตตัวเขบ็ตหนึ่งชั้น ที่ 108 บีพีเอ็ม */
+  const CHORDS = [[261.63, 329.63, 392.0], [196.0, 246.94, 293.66], [220.0, 261.63, 329.63], [174.61, 220.0, 261.63]];
+  const BASS = [130.81, 98.0, 110.0, 87.31];
+  const MEL = [
+    [659.25, 0, 783.99, 659.25, 587.33, 0, 523.25, 0], [587.33, 0, 659.25, 587.33, 0, 783.99, 0, 0],
+    [659.25, 0, 880.0, 783.99, 659.25, 0, 587.33, 523.25], [587.33, 0, 659.25, 0, 523.25, 0, 0, 0],
+  ];
+  function mnote(f, t, dur, type, vol) {
+    const a = ac; if (!a || !mBus || !f) return;
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(mBus); o.start(t); o.stop(t + dur + 0.05);
+  }
+  function mSchedule() {
+    if (!ac || !mBus) return;
+    if (mNext < ac.currentTime - 0.1) mNext = ac.currentTime + 0.05;
+    while (mNext < ac.currentTime + 0.5) {
+      const bar = Math.floor(mStep / 8) % 4, i = mStep % 8, t = mNext;
+      if (i % 4 === 0) mnote(BASS[bar], t, BEAT * 3.6, 'triangle', 0.16);
+      mnote(CHORDS[bar][[0, 1, 2, 1, 0, 1, 2, 1][i]] * 2, t, BEAT * 0.9, 'sine', 0.06);
+      mnote(MEL[bar][i], t, BEAT * 1.6, 'triangle', 0.075);
+      mNext += BEAT; mStep++;
+    }
+  }
+  const musicWanted = () => mOn && !muted && !document.hidden;
+  function musicSync() {
+    const a = ctx(); if (!a) return;
+    if (!mBus) { mBus = a.createGain(); mBus.gain.value = 0; const lp = a.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2600; mBus.connect(lp); lp.connect(a.destination); }
+    if (musicWanted()) {
+      if (!mTimer) { mNext = a.currentTime + 0.1; mTimer = setInterval(mSchedule, 120); }
+      mBus.gain.cancelScheduledValues(a.currentTime); mBus.gain.setTargetAtTime(0.55, a.currentTime, 0.4);
+    } else if (mTimer) {
+      mBus.gain.cancelScheduledValues(a.currentTime); mBus.gain.setTargetAtTime(0, a.currentTime, 0.15);
+      const tm = mTimer; mTimer = null; setTimeout(() => { if (!mTimer) clearInterval(tm); }, 600);
+    }
+  }
+  const mbtn = $('#music');
+  const noteIcon = () => {
+    mbtn.innerHTML = `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>${mOn && !muted ? '' : '<path d="M3 3l18 18"/>'}</svg>`;
+    mbtn.setAttribute('aria-pressed', String(mOn && !muted)); mbtn.title = mOn ? 'ปิดเพลง' : 'เปิดเพลง';
+  };
+  mbtn.addEventListener('click', () => { mOn = !mOn; try { localStorage.setItem('mg.music', mOn ? '1' : '0'); } catch {} noteIcon(); musicSync(); play('pop'); });
+  sbtn.addEventListener('click', () => { noteIcon(); musicSync(); });
+  document.addEventListener('visibilitychange', musicSync);
+  noteIcon();
+  document.addEventListener('pointerdown', () => musicSync(), { passive: true });
+  document.addEventListener('keydown', () => musicSync(), { passive: true });
 
   /* ---------- คอนเฟตติ ---------- */
   const cv = $('#fx'), g = cv.getContext('2d');

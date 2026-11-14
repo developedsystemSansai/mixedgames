@@ -5,7 +5,7 @@
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const ld = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
   const sv = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} };
-  const ig = (n, c = '') => `<img class="gi ${c}" src="assets/game/${n}.webp" alt="" decoding="async" draggable="false">`;
+  const ig = (n, c = '') => `<img class="gi ${c}" src="assets/game/${n}.webp?v=2" alt="" decoding="async" draggable="false">`;
   const pp = (cls, i) => `class="${cls} pop" style="--i:${i}"`;
   // รูปประกอบคำ: ใช้ Twemoji (SVG) ถ้าโหลดไม่ได้จะถอยกลับไปใช้ตัวอีโมจิ
   const twCode = (e) => { const c = [...e].map((x) => x.codePointAt(0).toString(16)); return (c.includes('200d') ? c : c.filter((x) => x !== 'fe0f')).join('-'); };
@@ -13,8 +13,8 @@
   const eff = (st, g) => (g === 'head' ? st.mode : st.mode === 'cat' ? 'cat' : 'all');
 
   const GAMES = {
-    head: { name: 'อะไรอยู่หัวกู', icon: 'question', rule: 'เห็นคำของเพื่อนทุกคน ยกเว้นของตัวเอง ถามใช่/ไม่ใช่แล้วทายให้ได้ก่อน' },
-    solo: { name: 'อะไรอยู่หัวกู · 1 คนทาย', icon: 'players', rule: 'ทายทีละคน เพื่อนดูคำและรูปจากจอแสดงคำ แล้วช่วยตอบ ใช่/ไม่ใช่ · มีคนเดียวก็เริ่มได้' },
+    head: { name: 'อะไรอยู่บนหัววะ?', icon: 'question', rule: 'เห็นคำของเพื่อนทุกคน ยกเว้นของตัวเอง ถามใช่/ไม่ใช่แล้วทายให้ได้ก่อน' },
+    solo: { name: 'อะไรอยู่บนหัววะ? · 1 คนทาย', icon: 'players', rule: 'ทายทีละคน เพื่อนดูคำและรูปจากจอแสดงคำ แล้วช่วยตอบ ใช่/ไม่ใช่ · มีคนเดียวก็เริ่มได้' },
     forbidden: { name: 'คำต้องห้าม', icon: 'no-talking', rule: 'ทุกคนได้คำง่ายๆ จากหมวดเดียวกัน ห้ามพูดคำของตัวเอง ชวนคุยให้เพื่อนหลุด' },
   };
   const LV = ['ง่ายมาก', 'ง่าย', 'ปานกลาง', 'ยาก', 'ยากมาก'];
