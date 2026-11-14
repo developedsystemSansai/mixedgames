@@ -7,19 +7,25 @@
   const sv = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} };
   const ig = (n, c = '') => `<img class="gi ${c}" src="assets/game/${n}.webp" alt="" decoding="async" draggable="false">`;
   const pp = (cls, i) => `class="${cls} pop" style="--i:${i}"`;
+  // รูปประกอบคำ: ใช้ Twemoji (SVG) ถ้าโหลดไม่ได้จะถอยกลับไปใช้ตัวอีโมจิ
+  const twCode = (e) => { const c = [...e].map((x) => x.codePointAt(0).toString(16)); return (c.includes('200d') ? c : c.filter((x) => x !== 'fe0f')).join('-'); };
+  const pic = (e, cls = '') => (e ? `<span class="pic ${cls}" data-e="${esc(e)}"><img src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/${twCode(e)}.svg" alt="" decoding="async" draggable="false" onerror="this.parentNode.classList.add('err');this.remove()"></span>` : '');
+  const eff = (st, g) => (g === 'head' ? st.mode : st.mode === 'cat' ? 'cat' : 'all');
 
   const GAMES = {
     head: { name: 'อะไรอยู่หัวกู', icon: 'question', rule: 'เห็นคำของเพื่อนทุกคน ยกเว้นของตัวเอง ถามใช่/ไม่ใช่แล้วทายให้ได้ก่อน' },
-    forbidden: { name: 'คำต้องห้าม', icon: 'no-talking', rule: 'ทุกคนมีคำที่ห้ามพูด ชวนคุยให้เพื่อนหลุดพูดคำของตัวเอง' },
+    solo: { name: 'อะไรอยู่หัวกู · 1 คนทาย', icon: 'players', rule: 'ทายทีละคน คนอื่นเห็นคำพร้อมรูป แล้วช่วยตอบ ใช่/ไม่ใช่' },
+    forbidden: { name: 'คำต้องห้าม', icon: 'no-talking', rule: 'ทุกคนได้คำง่ายๆ จากหมวดเดียวกัน ห้ามพูดคำของตัวเอง ชวนคุยให้เพื่อนหลุด' },
   };
   const LV = ['ง่ายมาก', 'ง่าย', 'ปานกลาง', 'ยาก', 'ยากมาก'];
   const MODES = { all: 'สุ่มทุกหมวด', cat: 'เลือกหมวด', chaos: 'Chaos' };
+  const MODES2 = { all: 'สุ่มหมวดทุกรอบ', cat: 'เลือกหมวด' };
   const TIMES = [0, 3, 5, 10, 15, 20, 30];
   const TAGS = { y: ['check', 'ใช่'], n: ['wrong', 'ไม่ใช่'], h: ['chat-bubbles', 'คำใบ้'], q: ['question', 'สงสัย'] };
   const ERR = {
     unauthorized: 'หมดเวลาเชื่อมต่อ ลองเข้าห้องใหม่', room_not_found: 'ไม่พบห้องนี้ เช็กรหัสอีกที', in_progress: 'ห้องนี้กำลังเล่นอยู่ รอจบรอบก่อน',
     room_full: 'ห้องเต็มแล้ว (สูงสุด 10 คน)', name_taken: 'มีคนใช้ชื่อนี้ในห้องแล้ว', name_required: 'ใส่ชื่อก่อนนะ', need_players: 'ต้องมีอย่างน้อย 2 คน',
-    few_words: 'คำในหมวดนี้ไม่พอ ลองเพิ่มระดับหรือหมวด', host_only: 'เฉพาะโฮสต์เท่านั้น', already_open: 'มีคนจับคนนี้อยู่แล้ว', bad_state: 'ทำรายการนี้ไม่ได้ในตอนนี้', busy: 'ระบบยุ่งอยู่ ลองอีกครั้ง',
+    few_words: 'คำในหมวดที่เลือกไม่พอ ลองเลือกหมวดเพิ่มหรือสุ่มทุกหมวด', host_only: 'เฉพาะโฮสต์เท่านั้น', already_open: 'มีคนจับคนนี้อยู่แล้ว', bad_state: 'ทำรายการนี้ไม่ได้ในตอนนี้', busy: 'ระบบยุ่งอยู่ ลองอีกครั้ง',
   };
   const P = {
     copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2"/>',
@@ -77,7 +83,7 @@
       n.players.filter((x) => !old.has(x.id)).forEach((x) => FX.banner(`${x.name} เข้าห้องแล้ว`, 'players')); FX.play('pop');
     }
     if (n.status === 'playing' && (p.status !== 'playing' || p.round !== n.round)) {
-      FX.splash({ icon: 'mystery-cards', title: `รอบที่ ${n.round}`, sub: GAMES[n.game].name, ms: 1400 }); FX.play('start'); FX.vib(30); return;
+      FX.splash({ icon: 'mystery-cards', title: `รอบที่ ${n.round}`, sub: n.game === 'solo' ? `${nm(n.guesser)} เป็นผู้ทายรอบนี้` : GAMES[n.game].name, ms: 1400 }); FX.play('start'); FX.vib(30); return;
     }
     if (n.status === 'over' && p.status === 'playing') return finale(n);
     if (n.status !== 'playing' || p.round !== n.round) return;
@@ -86,6 +92,7 @@
       const mine = h.player === me;
       if (h.state === 'solved') {
         if (mine) { FX.play('correct'); FX.burst(innerWidth / 2, innerHeight * 0.38, 100); FX.flash('gold'); FX.floaty(`+${h.pts}`); FX.vib([30, 30, 80]); }
+        else if (n.game === 'solo') { FX.banner(`${nm(h.player)} ทายถูกแล้ว! ทุกคนได้ +1`, 'check'); FX.play('correct'); FX.burst(innerWidth / 2, innerHeight * 0.38, 60); FX.floaty('+1'); }
         else { FX.banner(`${nm(h.player)} ทายถูกแล้ว! อันดับ ${h.rank}`, 'check'); FX.play('pop'); }
       } else if (h.state === 'gaveup') {
         quiet = false; if (mine) FX.play('lose'); else { FX.banner(`${nm(h.player)} ยอมแพ้`, 'mascot-cry'); FX.play('vote'); }
@@ -106,8 +113,11 @@
     if (c.target === S?.me || c.target === sess?.player) { FX.flash('red'); FX.shake(); FX.play('buzz'); FX.vib([60, 40, 60]); FX.banner(`${nm(c.accuser)} จับคุณว่าพูดคำต้องห้าม!`, 'buzzer'); }
     else if (c.accuser !== (S && S.me)) { FX.play('buzz'); FX.banner(`${nm(c.accuser)} จับ ${nm(c.target)}! ช่วยโหวตหน่อย`, 'buzzer'); }
   }
+  const winners = (n) => (n.game === 'head' ? n.hands.filter((h) => h.rank === 1).map((h) => h.player)
+    : n.game === 'solo' ? (n.hands.some((h) => h.state === 'solved') ? n.players.map((p) => p.id) : [])
+    : n.hands.filter((h) => h.state === 'active').map((h) => h.player));
   function finale(n) {
-    const wins = n.game === 'head' ? n.hands.filter((h) => h.rank === 1).map((h) => h.player) : n.hands.filter((h) => h.state === 'active').map((h) => h.player);
+    const wins = winners(n);
     const mine = n.hands.find((h) => h.player === n.me) || {};
     if (wins.includes(n.me)) { FX.play('win'); FX.cannons(); FX.rain(2600); FX.flash('gold'); FX.vib([40, 40, 140]); }
     else if (mine.state === 'solved') { FX.play('correct'); FX.burst(); }
@@ -128,24 +138,24 @@
     const q = inviteCode(), name = esc(ld('mg.name') || '');
     const invite = q ? `<div ${pp('say', 1)}>${ig('mascot-wave')}<p>เพื่อนชวนเข้าห้อง <b>${q}</b> ใส่ชื่อแล้วกดเข้าห้องได้เลย</p></div>` : '';
     const join = `<section ${pp('panel', 3)}><h2>${ig('players', 'sm')}เข้าห้องของเพื่อน</h2><label class="field">รหัสห้อง 4 ตัว<input id="code" class="code-in" maxlength="4" autocomplete="off" autocapitalize="characters" placeholder="ABCD" value="${esc(q)}"></label><button class="btn ${q ? 'primary' : ''} block" data-act="join">${ico('play')}เข้าห้อง</button></section>`;
-    const create = `<section ${pp('panel', q ? 4 : 3)}><h2>${ig('mystery-cards', 'sm')}เปิดห้องใหม่</h2><div class="seg two" role="group" aria-label="เลือกเกม">${Object.entries(GAMES).map(([k, g]) => `<button class="opt" data-act="pickgame" data-v="${k}" aria-pressed="${k === homeGame}">${ig(g.icon)}<b>${g.name}</b><small>${g.rule}</small></button>`).join('')}</div><button class="btn ${q ? '' : 'primary'} block" data-act="create">สร้างห้อง</button></section>`;
+    const create = `<section ${pp('panel', q ? 4 : 3)}><h2>${ig('mystery-cards', 'sm')}เปิดห้องใหม่</h2><div class="seg list" role="group" aria-label="เลือกเกม">${Object.entries(GAMES).map(([k, g]) => `<button class="opt" data-act="pickgame" data-v="${k}" aria-pressed="${k === homeGame}">${ig(g.icon)}<b>${g.name}</b><small>${g.rule}</small></button>`).join('')}</div><button class="btn ${q ? '' : 'primary'} block" data-act="create">สร้างห้อง</button></section>`;
     return `<div class="stack lg"><section ${pp('hero', 0)}>${ig('mascot-wave', 'bob')}<div><h1 class="sr">Let me ทาย</h1><p class="lead">ทายคำกับเพื่อน 2–10 คน ใช้มือถือของตัวเอง ไม่ต้องสมัครสมาชิก</p></div></section>${invite}
       <section ${pp('panel', 2)}><label class="field">ชื่อที่ใช้ในเกม<input id="name" maxlength="16" autocomplete="off" placeholder="เช่น บี" value="${name}"></label></section>${q ? join + create : create + join}</div>`;
   }
 
   function lobby() {
-    const host = S.host === S.me, st = S.settings, g = S.game, n = S.players.length;
+    const host = S.host === S.me, st = S.settings, g = S.game, n = S.players.length, md = eff(st, g);
     const list = `<ul class="plist">${S.players.map((p) => `<li class="${p.online ? '' : 'off'}">${avatar(p)}<span class="nm">${esc(p.name)}${p.id === S.me ? ' <span class="mute">(คุณ)</span>' : ''}</span>${p.id === S.host ? `<span class="crown" title="โฮสต์">${ico('crown')}</span>` : ''}${S.round ? `<span class="num mute">${p.score} แต้ม</span>` : ''}</li>`).join('')}</ul>`;
     const chips = (arr, fn) => `<div class="chips">${arr.map(fn).join('')}</div>`;
     const settings = host ? `<section ${pp('panel', 3)}><h2>${ig('mystery-cards', 'sm')}ตั้งค่าเกม</h2>
-      <div class="seg two" role="group" aria-label="เกม">${Object.entries(GAMES).map(([k, x]) => `<button class="opt" data-act="game" data-v="${k}" aria-pressed="${k === g}">${ig(x.icon)}<b>${x.name}</b><small>${x.rule}</small></button>`).join('')}</div>
-      <div class="seg three" role="group" aria-label="โหมดสุ่มคำ">${Object.entries(MODES).map(([k, t]) => `<button class="chip" data-act="mode" data-v="${k}" aria-pressed="${st.mode === k}">${t}</button>`).join('')}</div>
-      ${st.mode === 'chaos' ? '<p class="hint">Chaos: สุ่มเฉพาะคำยากมากและคำกวนประสาท</p>' : chips(LV, (t, i) => `<button class="chip" data-act="lvl" data-v="${i + 1}" aria-pressed="${st.levels.includes(i + 1)}">${t}</button>`)}
-      ${st.mode === 'cat' ? chips(S.cats || [], (c) => `<button class="chip" data-act="cat" data-v="${esc(c)}" aria-pressed="${st.cats.includes(c)}">${esc(c)}</button>`) : ''}
+      <div class="seg list" role="group" aria-label="เกม">${Object.entries(GAMES).map(([k, x]) => `<button class="opt" data-act="game" data-v="${k}" aria-pressed="${k === g}">${ig(x.icon)}<b>${x.name}</b><small>${x.rule}</small></button>`).join('')}</div>
+      <div class="seg ${g === 'head' ? 'three' : 'two'}" role="group" aria-label="โหมดสุ่มคำ">${Object.entries(g === 'head' ? MODES : MODES2).map(([k, t]) => `<button class="chip" data-act="mode" data-v="${k}" aria-pressed="${md === k}">${t}</button>`).join('')}</div>
+      ${g === 'forbidden' ? '<p class="hint">คำง่ายๆ ที่ใช้ในชีวิตประจำวัน · แต่ละรอบทุกคนได้คำจากหมวดเดียวกัน</p>' : g === 'solo' ? '<p class="hint">ใช้คำที่มีรูปประกอบ · ผู้ทายหมุนเวียนทีละคน คนอื่นเห็นคำและรูปแล้วช่วยตอบ ใช่/ไม่ใช่ (ผู้ทายได้ 3 แต้ม ผู้ช่วยคนละ 1 แต้ม)</p>' : md === 'chaos' ? '<p class="hint">Chaos: สุ่มเฉพาะคำยากมากและคำกวนประสาท</p>' : chips(LV, (t, i) => `<button class="chip" data-act="lvl" data-v="${i + 1}" aria-pressed="${st.levels.includes(i + 1)}">${t}</button>`)}
+      ${md === 'cat' ? chips(S.cats || [], (c) => `<button class="chip" data-act="cat" data-v="${esc(c)}" aria-pressed="${st.cats.includes(c)}">${esc(c)}</button>`) : ''}
       <hr class="divider"><h2>${ig('timer', 'sm')}เวลาในการทาย <span class="hint">(สูงสุด 30 นาที)</span></h2>
       ${chips(TIMES, (m) => `<button class="chip" data-act="mins" data-v="${m}" aria-pressed="${st.minutes === m}">${m ? m + ' นาที' : 'ไม่จำกัด'}</button>`)}
       ${g === 'forbidden' ? `<button class="chip" data-act="reveal" aria-pressed="${st.reveal}">เห็นคำของคนอื่น (ไว้หลอกล่อ)</button>` : ''}</section>`
-      : `<section ${pp('panel', 3)}><h2>${ig(GAMES[g].icon, 'sm')}${GAMES[g].name}</h2><p class="mute">${GAMES[g].rule}</p><p class="hint">โหมด ${MODES[st.mode]} · ${st.minutes ? st.minutes + ' นาที' : 'ไม่จำกัดเวลา'}</p></section>`;
+      : `<section ${pp('panel', 3)}><h2>${ig(GAMES[g].icon, 'sm')}${GAMES[g].name}</h2><p class="mute">${GAMES[g].rule}</p><p class="hint">โหมด ${(g === 'head' ? MODES : MODES2)[md]} · ${st.minutes ? st.minutes + ' นาที' : 'ไม่จำกัดเวลา'}</p></section>`;
     const wait = !host ? `<div ${pp('say', 4)}>${ig('mascot-wave')}<p>รอโฮสต์กดเริ่มเกมนะ</p></div>` : n < 2 ? `<div ${pp('say', 4)}>${ig('mascot-wave')}<p>ชวนเพื่อนอีกอย่างน้อย 1 คนก่อนเริ่ม (สนุกสุด 5–10 คน)</p></div>` : '';
     return `${top()}<div class="stack lg">
       <div ${pp('stack', 0)}><div class="codebox" aria-label="รหัสห้อง">${ig('ticket')}<b>${S.room}</b></div>
@@ -156,23 +166,42 @@
 
   const hostEnd = () => (S.host === S.me ? `<button class="btn ghost block" data-act="end">จบรอบนี้</button>` : '');
 
+  const guessBox = () => `<div class="stack"><div class="guessrow"><label class="field"><span class="sub mute">ทายเลย</span><input id="guess" maxlength="60" autocomplete="off" placeholder="คิดว่าเป็นอะไร?"></label><button class="btn primary" data-act="guess" aria-label="ส่งคำทาย">${ico('send')}</button></div><button class="btn ghost" data-act="giveup">ยอมแพ้ ขอดูเฉลย</button></div>`;
+
   function headGame() {
     const me = H(S.me) || {};
     let mine;
     if (me.state === 'solved') mine = ticket('mine win', 'ทายถูกแล้ว', me.word, `อันดับ ${me.rank} · +${me.pts} แต้ม`, false, 'check');
     else if (me.state === 'gaveup') mine = ticket('mine dead', 'คุณยอมแพ้', me.word, 'คำบนหัวคุณคือคำนี้', false, 'wrong');
     else mine = ticket('mine', 'คำบนหัวของคุณ', '?', 'ถามเพื่อนใช่/ไม่ใช่ แล้วพิมพ์ทาย', true, 'question');
-    const guess = me.state === 'active' ? `<div class="stack"><div class="guessrow"><label class="field"><span class="sub mute">ทายเลย</span><input id="guess" maxlength="60" autocomplete="off" placeholder="คิดว่าเป็นอะไร?"></label><button class="btn primary" data-act="guess" aria-label="ส่งคำทาย">${ico('send')}</button></div><button class="btn ghost" data-act="giveup">ยอมแพ้ ขอดูเฉลย</button></div>` : '';
+    const guess = me.state === 'active' ? guessBox() : '';
     const others = S.players.filter((p) => p.id !== S.me).map((p, i) => {
       const h = H(p.id) || {}, done = h.state && h.state !== 'active';
-      return `<li ${pp('hand', i)}>${avatar(p)}<span class="who"><b>${esc(p.name)}</b>${h.state === 'solved' ? `<span class="tag good">ทายถูก อันดับ ${h.rank}</span>` : h.state === 'gaveup' ? '<span class="tag bad">ยอมแพ้</span>' : '<span class="sub mute">ยังทายอยู่</span>'}</span><span class="stub ${done ? 'dim' : ''}">${esc(h.word)}</span></li>`;
+      return `<li ${pp('hand', i)}>${avatar(p)}<span class="who"><b>${esc(p.name)}</b>${h.state === 'solved' ? `<span class="tag good">ทายถูก อันดับ ${h.rank}</span>` : h.state === 'gaveup' ? '<span class="tag bad">ยอมแพ้</span>' : '<span class="sub mute">ยังทายอยู่</span>'}</span><span class="stub ${done ? 'dim' : ''}">${pic(h.emoji, 'sm')}${esc(h.word)}</span></li>`;
     }).join('');
     return `${top(timer())}<div class="stack lg"><div class="pop" style="--i:0">${mine}</div><div class="pop" style="--i:1">${guess}</div><section class="stack pop" style="--i:2"><h2>คำบนหัวเพื่อน</h2><ul class="plist">${others}</ul></section>${hostEnd()}</div>`;
+  }
+
+
+  function soloGame() {
+    const g = S.guesser, gh = H(g) || {}, imG = g === S.me, gp = PL(g), done = gh.state && gh.state !== 'active';
+    const card = (cls, lbl, sub, badge) => `<div class="ticket solo ${cls}">${badge ? ig(badge, 'badge') : ''}<span class="lbl">${lbl}</span>${gh.emoji ? pic(gh.emoji, 'xl') : '<span class="pic xl q">?</span>'}<span class="word${gh.word ? '' : ' q'}">${esc(gh.word || '?')}</span>${sub ? `<span class="sub mute">${sub}</span>` : ''}</div>`;
+    let main;
+    if (gh.state === 'solved') main = card('win', imG ? 'คุณทายถูกแล้ว!' : `${esc(gp.name)} ทายถูกแล้ว!`, `ผู้ทายได้ +${gh.pts} แต้ม · ผู้ช่วยได้ +1`, 'check');
+    else if (gh.state === 'gaveup') main = card('dead', imG ? 'คุณยอมแพ้' : `${esc(gp.name)} ยอมแพ้`, 'เฉลยคือคำนี้', 'wrong');
+    else if (imG) main = card('mine', 'คุณคือผู้ทายรอบนี้', 'ถามเพื่อนใช่/ไม่ใช่ เพื่อนเห็นคำและรูปบนจอของตัวเอง แล้วพิมพ์ทาย', 'question');
+    else main = card('', `คำบนหัวของ ${esc(gp.name)}`, 'ตอบได้แค่ ใช่ / ไม่ใช่ เท่านั้น ห้ามบอกตรงๆ นะ', 'no-talking');
+    const cat = !imG && S.category && !done ? `<div class="catpill pop" style="--i:0">หมวดรอบนี้ <b>${esc(S.category)}</b></div>` : '';
+    const guess = imG && gh.state === 'active' ? guessBox() : '';
+    const crew = S.players.filter((p) => p.id !== g).map((p, i) => `<li ${pp('hand', i)}>${avatar(p)}<span class="who"><b>${esc(p.name)}${p.id === S.me ? ' <span class="mute">(คุณ)</span>' : ''}</b><span class="sub mute">ผู้ช่วยตอบ ใช่ / ไม่ใช่</span></span></li>`).join('');
+    const who = `<div class="turn pop" style="--i:0">${avatar(gp)}<span>${imG ? 'ตาคุณทายแล้ว!' : `<b>${esc(gp.name)}</b> กำลังทาย`}</span></div>`;
+    return `${top(timer())}<div class="stack lg">${who}${cat}<div class="pop" style="--i:1">${main}</div><div class="pop" style="--i:2">${guess}</div><section class="stack pop" style="--i:3"><h2>${imG ? 'เพื่อนที่ช่วยตอบ' : 'ผู้ช่วย'}</h2><ul class="plist">${crew}</ul></section>${hostEnd()}</div>`;
   }
 
   function forbGame() {
     const me = H(S.me) || {}, out = me.state === 'out';
     const mine = out ? ticket('mine dead', 'คุณหลุดแล้ว', me.word, 'ยังช่วยโหวตจับเพื่อนได้', false, 'wrong') : ticket('mine', 'คำต้องห้ามของคุณ · ห้ามพูด', me.word, 'คุยตามปกติ แต่อย่าเผลอพูดคำนี้', false, 'no-talking');
+    const cat = S.category ? `<div class="catpill pop" style="--i:0">หมวดรอบนี้ <b>${esc(S.category)}</b> · ทุกคนได้คำในหมวดเดียวกัน</div>` : '';
     const open = new Set(S.claims.map((c) => c.target));
     const claims = S.claims.map((c) => {
       const self = c.target === S.me, v = c.mine;
@@ -185,22 +214,24 @@
       return `<li ${pp('hand', i)}>${avatar(p)}<span class="who"><b>${esc(p.name)}</b><span class="tag ${alive ? 'good' : 'bad'}" style="justify-self:start">${alive ? 'ยังอยู่' : 'หลุดแล้ว'}</span></span>
         <span class="row" style="flex-direction:column;align-items:flex-end;gap:8px">${h.word ? `<span class="stub ${alive ? '' : 'dim'}">${esc(h.word)}</span>` : '<span class="stub dim">ซ่อนไว้</span>'}${alive && !open.has(p.id) ? `<button class="btn sm primary" data-act="accuse" data-id="${p.id}">${ig('buzzer')}จับได้!</button>` : ''}</span></li>`;
     }).join('');
-    return `${top(timer())}<div class="stack lg"><div class="pop" style="--i:0">${mine}</div>${claims ? `<section class="stack"><h2>รอโหวต</h2>${claims}</section>` : ''}<section class="stack pop" style="--i:2"><h2>เพื่อนในวง</h2><ul class="plist">${others}</ul></section>${hostEnd()}</div>`;
+    return `${top(timer())}<div class="stack lg">${cat}<div class="pop" style="--i:0">${mine}</div>${claims ? `<section class="stack"><h2>รอโหวต</h2>${claims}</section>` : ''}<section class="stack pop" style="--i:2"><h2>เพื่อนในวง</h2><ul class="plist">${others}</ul></section>${hostEnd()}</div>`;
   }
 
   function over() {
     const host = S.host === S.me, hands = S.hands, mine = H(S.me) || {};
-    const wins = S.game === 'head' ? hands.filter((h) => h.rank === 1).map((h) => h.player) : hands.filter((h) => h.state === 'active').map((h) => h.player);
+    const wins = winners(S);
+    const gh = S.game === 'solo' ? H(S.guesser) || {} : null;
     let head;
-    if (S.game === 'head') head = wins.length ? `${esc(PL(wins[0]).name)} ทายถูกก่อน` : 'ไม่มีใครทายถูกเลย';
+    if (S.game === 'solo') head = gh.state === 'solved' ? `${esc(PL(S.guesser).name)} ทายถูก! ทั้งทีมได้แต้ม` : `${esc(PL(S.guesser).name)} ทายไม่ออก`;
+    else if (S.game === 'head') head = wins.length ? `${esc(PL(wins[0]).name)} ทายถูกก่อน` : 'ไม่มีใครทายถูกเลย';
     else head = wins.length === 1 ? `${esc(PL(wins[0]).name)} รอดคนสุดท้าย` : wins.length ? `${wins.length} คนรอดจนหมดเวลา` : 'ไม่มีใครรอด';
     const iWon = wins.includes(S.me), lost = mine.state === 'out' || mine.state === 'gaveup';
     const mood = iWon ? `<img class="gi cel" src="assets/game/mascot-celebration.gif" alt="" decoding="async">` : ig(lost ? 'mascot-cry' : wins.length ? 'mascot-shock' : 'mascot-wave', 'big');
     const rows = [...S.players].sort((a, b) => b.score - a.score).map((p, i) => {
       const h = H(p.id), from = p.score - (h ? h.pts : 0);
-      return `<li ${pp(i === 0 ? 'first' : '', i + 2)}><span class="rank num ${i === 0 ? 'first' : ''}">${i + 1}</span>${avatar(p)}<span class="nm">${esc(p.name)}${h ? `<br><span class="sub mute">${esc(h.word)}</span>` : ''}</span><span class="delta num">${h && h.pts ? '+' + h.pts : ''}</span><b class="num" data-count data-from="${from}" data-to="${p.score}">${p.score}</b>${i === 0 && p.score > 0 ? ig('trophy') : ''}</li>`;
+      return `<li ${pp(i === 0 ? 'first' : '', i + 2)}><span class="rank num ${i === 0 ? 'first' : ''}">${i + 1}</span>${avatar(p)}<span class="nm">${esc(p.name)}${h ? `<br><span class="sub mute">${S.game === 'solo' ? (p.id === S.guesser ? 'ผู้ทาย' : 'ผู้ช่วย') : esc(h.word)}</span>` : ''}</span><span class="delta num">${h && h.pts ? '+' + h.pts : ''}</span><b class="num" data-count data-from="${from}" data-to="${p.score}">${p.score}</b>${i === 0 && p.score > 0 ? ig('trophy') : ''}</li>`;
     }).join('');
-    return `${top()}<div class="stack lg"><div class="winhero pop" style="--i:0">${iWon ? ig('trophy', 'tro') : ''}${mood}<p class="mute">จบรอบที่ ${S.round}</p><h1>${head}</h1></div>
+    return `${top()}<div class="stack lg"><div class="winhero pop" style="--i:0">${iWon ? ig('trophy', 'tro') : ''}${mood}<p class="mute">จบรอบที่ ${S.round}</p><h1>${head}</h1>${gh && gh.word ? `<div class="revealpic">${pic(gh.emoji, 'xl')}<span class="stub">${esc(gh.word)}</span></div>` : ''}</div>
       <section class="stack pop" style="--i:1"><h2>คะแนนรวม</h2><ul class="plist">${rows}</ul></section>
       ${host ? `<div class="stack pop" style="--i:6"><button class="btn primary block" data-act="start">${ico('play')}เล่นรอบต่อไป</button><button class="btn ghost block" data-act="tolobby">ตั้งค่า / รอเพื่อนเพิ่ม</button></div>` : `<div ${pp('say', 6)}>${ig('mascot-wave')}<p>รอโฮสต์เริ่มรอบใหม่</p></div>`}</div>`;
   }
@@ -209,7 +240,7 @@
     let html;
     if (!sess) html = home();
     else if (!S) html = `<div class="say pop">${ig('mascot-wave', 'bob')}<p>กำลังเข้าห้อง…</p></div>`;
-    else html = S.status === 'lobby' ? lobby() : S.status === 'over' ? over() : S.game === 'head' ? headGame() : forbGame();
+    else html = S.status === 'lobby' ? lobby() : S.status === 'over' ? over() : S.game === 'head' ? headGame() : S.game === 'solo' ? soloGame() : forbGame();
     const key = !sess ? 'home' : !S ? 'load' : S.status + ':' + S.round + ':' + S.game;
     if (key !== viewKey) { viewKey = key; enterNext = true; }
     document.body.classList.toggle('in-room', !!(sess && S));
@@ -307,7 +338,7 @@
       catch { try { await navigator.clipboard.writeText(url); say('คัดลอกลิงก์แล้ว'); } catch { say(url); } }
     },
     async leave() { if (!confirm('ออกจากห้องนี้?')) return; try { await call('mg_leave'); ping(); } catch {} leaveLocal(); },
-    game(t) { patch(t.dataset.v, {}); }, mode(t) { patch(null, { mode: t.dataset.v }); },
+    game(t) { const v = t.dataset.v; patch(v, { cats: [], mode: v !== 'head' && S.settings.mode === 'chaos' ? 'all' : S.settings.mode }); }, mode(t) { patch(null, { mode: t.dataset.v }); },
     lvl(t) { const l = toggle(S.settings.levels, +t.dataset.v); if (l.length) patch(null, { levels: l }); },
     cat(t) { patch(null, { cats: toggle(S.settings.cats, t.dataset.v) }); },
     mins(t) { patch(null, { minutes: +t.dataset.v }); }, reveal() { patch(null, { reveal: !S.settings.reveal }); },
