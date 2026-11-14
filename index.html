@@ -3,19 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#63c3f8">
+<meta name="theme-color" content="#ffd96b">
 <meta name="description" content="Let me ทาย — เกมทายคำสำหรับวงเพื่อน 2–10 คน เล่นพร้อมกันบนมือถือ ไม่ต้องสมัคร">
 <title>Let me ทาย — อะไรอยู่หัวกู · 1 คนทาย · คำต้องห้าม</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600&family=Mitr:wght@500;600&display=swap" rel="stylesheet">
-<link rel="preload" as="image" href="assets/logo.webp">
+<link rel="preload" as="image" href="assets/game/c-wink.webp">
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
-<div id="sky" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
 <main class="stage">
-  <header class="brand"><img id="logo" src="assets/logo.webp" alt="Let me ทาย" width="734" height="316"></header>
+  <header class="brand"><img class="mascot" src="assets/game/c-wink.webp" alt="" width="120" height="120"><h1 class="mark" aria-label="Let me ทาย"><span class="m1">Let me</span><span class="m2">ทาย</span></h1></header>
   <div id="app" aria-live="polite"></div>
 </main>
 <button id="sound" class="round" type="button" aria-label="เปิด/ปิดเสียง"></button>
@@ -26,6 +25,7 @@
 <div id="notes-root"></div>
 <div id="toast" role="status"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="js/qr.js"></script>
 <script src="js/config.js"></script>
 <script src="js/fx.js"></script>
 <script src="js/app.js"></script>

@@ -27,6 +27,7 @@
     pop: () => { tone(520, 0, 0.09, 'triangle', 0.12, 820); },
     vote: () => tone(480, 0, 0.08, 'triangle', 0.1, 360),
     tick: () => tone(1100, 0, 0.04, 'square', 0.05),
+    tick2: () => { tone(330, 0, 0.16, 'triangle', 0.16); tone(660, 0, 0.08, 'square', 0.04); },
     correct: () => arp([523, 659, 784, 1047], 0.075, 'triangle', 0.15, 0.28),
     wrong: () => { tone(220, 0, 0.22, 'sawtooth', 0.1, 120); tone(165, 0.12, 0.28, 'sawtooth', 0.1, 90); },
     buzz: () => { tone(150, 0, 0.18, 'square', 0.1); tone(150, 0.22, 0.28, 'square', 0.1); },
@@ -120,5 +121,24 @@
     spT = setTimeout(() => { s.className = 'off'; setTimeout(() => { s.className = ''; s.innerHTML = ''; }, 380); }, ms);
   }
 
-  window.FX = { play, vib, burst, cannons, rain, sparkle, flash, shake, floaty, banner, splash, reduce, get muted() { return muted; } };
+
+  /* นับถอยหลัง 3-2-1 ก่อนเริ่มรอบ + มาสคอตโผล่ขอบจอ */
+  let cdT = [];
+  function countdown({ title = '', sub = '' } = {}) {
+    const s = $('#splash'); clearTimeout(spT); cdT.forEach(clearTimeout); cdT = [];
+    if (reduce) return splash({ icon: 'm-go', title, sub, ms: 1000 });
+    const seq = [['3', 'm-think'], ['2', 'm-idea'], ['1', 'm-run'], ['ลุย!', 'm-go']];
+    seq.forEach(([n, ic], i) => cdT.push(setTimeout(() => {
+      s.className = 'on'; s.innerHTML = `<div class="sp cd ${i === 3 ? 'go' : ''}">${img(ic)}<em>${n}</em><b>${esc(title)}</b>${sub ? `<span>${esc(sub)}</span>` : ''}</div>`;
+      if (i < 3) play('tick2'); else { play('start'); burst(W / 2, H * 0.45, 50); }
+    }, i * 650)));
+    cdT.push(setTimeout(() => { s.className = 'off'; setTimeout(() => { s.className = ''; s.innerHTML = ''; }, 380); }, seq.length * 650 + 250));
+  }
+  function peek(name) {
+    if (reduce) return; const d = document.createElement('img');
+    d.className = 'peek ' + (Math.random() < 0.5 ? 'l' : 'r'); d.src = `assets/game/${name}.webp`; d.alt = '';
+    document.body.appendChild(d); setTimeout(() => d.remove(), 1700);
+  }
+
+  window.FX = { play, vib, burst, countdown, peek, cannons, rain, sparkle, flash, shake, floaty, banner, splash, reduce, get muted() { return muted; } };
 })();
