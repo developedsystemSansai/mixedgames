@@ -343,3 +343,15 @@ input[type=text],input:not([type]){font-size:1.2rem}
 #scrollbtns[hidden]{display:none}
 .sheet,.sheet .notelist{overscroll-behavior:contain}
 @media (max-width:480px){.stage{padding-inline:10px}#app>div{padding:14px 12px 18px;border-radius:22px}.stub{max-width:100%}}
+
+/* ---------- v4: กันภาพ/ข้อความซ้อนทับ ---------- */
+.ticket .gi.badge{position:static!important;width:64px!important;max-width:64px!important;height:auto!important;margin:0 auto -2px!important}
+.ticket>*{position:relative;max-width:100%}
+.ticket .lbl,.ticket .sub{display:block;text-align:center;overflow-wrap:anywhere}
+.ticket .pic.xl{margin:4px auto}
+.ticket .pic.xl.q{width:auto;height:auto;font-size:clamp(3rem,14vw,4.5rem)}
+.stage{padding-top:28px}
+.brand{position:relative;z-index:2;margin-bottom:4px}
+.top{position:relative;z-index:2}
+#app>div>*{min-width:0}
+.panel,.near,.ticket,.lastg{position:relative;overflow-wrap:anywhere}
