@@ -1,0 +1,9 @@
+-- 005: ปุ่ม "ยอมรับ" ให้เพื่อนตัดสินว่าคำทายใกล้เคียง/ทับศัพท์/ใช้แทนกันได้ (โหมด 1 คนทาย) · รันหลัง 004
+-- (สถานะนี้ตรงกับฐานข้อมูลจริงที่ใช้งานอยู่ — migration ชื่อ mg_accept_close_guess)
+-- ตาราง mg_guesses(id, room, round, player, text, status, created_at) เปิด RLS ไม่ให้ anon เข้าตรง
+-- settings.accept (ค่าเริ่มต้น false) เปิด/ปิดโดยโฮสต์ในล็อบบี้ ใช้กับโหมด solo เท่านั้น
+-- mg_guess: ทายผิดและเปิด accept จะเก็บคำทายลง mg_guesses (ล่าสุด 30 รายการต่อห้อง)
+-- mg_guesses(room, player, token): คำทายที่รอตัดสิน (สูงสุด 6)
+-- mg_accept(room, player, token, guess_id): ผู้ช่วย (ไม่ใช่ผู้ทาย) กดยอมรับ → ผู้ทาย +3 ผู้ช่วย +1 จบรอบ
+-- mg_watch_accept(room, guess_id): กดยอมรับจากจอแสดงคำ (?watch=)
+-- mg_accept_core: ตรรกะกลางที่ทั้งสองฟังก์ชันเรียกใช้

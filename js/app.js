@@ -26,6 +26,7 @@
     unauthorized: 'หมดเวลาเชื่อมต่อ ลองเข้าห้องใหม่', room_not_found: 'ไม่พบห้องนี้ เช็กรหัสอีกที', in_progress: 'ห้องนี้กำลังเล่นอยู่ รอจบรอบก่อน',
     room_full: 'ห้องเต็มแล้ว (สูงสุด 10 คน)', name_taken: 'มีคนใช้ชื่อนี้ในห้องแล้ว', name_required: 'ใส่ชื่อก่อนนะ', need_players: 'ต้องมีอย่างน้อย 2 คน (โหมด 1 คนทายเริ่มคนเดียวได้)',
     few_words: 'คำในหมวดที่เลือกไม่พอ ลองเลือกหมวดเพิ่มหรือสุ่มทุกหมวด', host_only: 'เฉพาะโฮสต์เท่านั้น', already_open: 'มีคนจับคนนี้อยู่แล้ว', bad_state: 'ทำรายการนี้ไม่ได้ในตอนนี้', busy: 'ระบบยุ่งอยู่ ลองอีกครั้ง',
+    guess_gone: 'คำทายนี้ถูกจัดการไปแล้ว',
   };
   const P = {
     copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2"/>',
@@ -57,6 +58,7 @@
     busy = true;
     try {
       const d = await call('mg_state'); offset = Date.parse(d.now) - Date.now();
+      d.guesses = d.game === 'solo' && d.status === 'playing' && d.settings.accept === true ? await call('mg_guesses').catch(() => []) : [];
       const prev = S; S = d; events(prev, d); notesSync(); render();
     } catch (e) { if (e.message === 'unauthorized') { say('ห้องนี้ปิดไปแล้ว หรือคุณถูกลบออกจากห้อง'); leaveLocal(); } }
     finally { busy = false; }
@@ -100,6 +102,7 @@
         if (mine) caught(); else { FX.banner(`${nm(h.player)} หลุดแล้ว!`, 'wrong'); FX.play('buzz'); FX.shake(); }
       }
     }
+    if (n.game === 'solo' && n.me !== n.guesser && n.guesses && n.guesses.length && (!p.guesses || !p.guesses.length || p.guesses[0].id !== n.guesses[0].id)) { FX.banner(`${nm(n.guesser)} ทายว่า "${n.guesses[0].text}" ใกล้เคียงไหม?`, 'question'); FX.play('pop'); }
     const seen = new Set(p.claims.map((c) => c.id));
     for (const c of n.claims) if (!seen.has(c.id)) claimed(c, nm);
     for (const c of p.claims) if (!n.claims.some((x) => x.id === c.id)) { const t = hand(n, c.target); if (t && t.state === 'active') { FX.banner('โหวตไม่ผ่าน รอดไปก่อน!', 'check'); FX.play('correct'); } }
@@ -154,7 +157,7 @@
       ${md === 'cat' ? chips(S.cats || [], (c) => `<button class="chip" data-act="cat" data-v="${esc(c)}" aria-pressed="${st.cats.includes(c)}">${esc(c)}</button>`) : ''}
       <hr class="divider"><h2>${ig('timer', 'sm')}เวลาในการทาย <span class="hint">(สูงสุด 30 นาที)</span></h2>
       ${chips(TIMES, (m) => `<button class="chip" data-act="mins" data-v="${m}" aria-pressed="${st.minutes === m}">${m ? m + ' นาที' : 'ไม่จำกัด'}</button>`)}
-      ${g === 'forbidden' ? `<button class="chip" data-act="reveal" aria-pressed="${st.reveal}">เห็นคำของคนอื่น (ไว้หลอกล่อ)</button>` : ''}</section>`
+      ${g === 'forbidden' ? `<button class="chip" data-act="reveal" aria-pressed="${st.reveal}">เห็นคำของคนอื่น (ไว้หลอกล่อ)</button>` : ''}${g === 'solo' ? `<hr class="divider"><h2>${ig('check', 'sm')}ยอมรับคำใกล้เคียง</h2><button class="chip" data-act="accept_mode" aria-pressed="${st.accept === true}">${st.accept === true ? 'เปิดอยู่' : 'ปิดอยู่'} · ผู้ช่วยกดยอมรับได้ ถ้าทายทับศัพท์/ใกล้เคียง/ใช้แทนกันได้</button>` : ''}</section>`
       : `<section ${pp('panel', 3)}><h2>${ig(GAMES[g].icon, 'sm')}${GAMES[g].name}</h2><p class="mute">${GAMES[g].rule}</p><p class="hint">โหมด ${(g === 'head' ? MODES : MODES2)[md]} · ${st.minutes ? st.minutes + ' นาที' : 'ไม่จำกัดเวลา'}</p></section>`;
     const minP = g === 'solo' ? 1 : 2;
     const wait = !host ? `<div ${pp('say', 4)}>${ig('m-sleep')}<p>รอโฮสต์กดเริ่มเกมนะ</p></div>` : n < minP ? `<div ${pp('say', 4)}>${ig('mascot-wave')}<p>ชวนเพื่อนอีกอย่างน้อย 1 คนก่อนเริ่ม (สนุกสุด 5–10 คน)</p></div>` : '';
@@ -194,10 +197,11 @@
     else main = card('', `คำบนหัวของ ${esc(gp.name)}`, 'ตอบได้แค่ ใช่ / ไม่ใช่ เท่านั้น ห้ามบอกตรงๆ นะ', 'no-talking');
     const cat = !imG && S.category && !done ? `<div class="catpill pop" style="--i:0">หมวดรอบนี้ <b>${esc(S.category)}</b></div>` : '';
     const guess = imG && gh.state === 'active' ? guessBox() : '';
+    const gl = gh.state === 'active' && S.settings.accept === true ? (S.guesses || []) : []; const near = gl.length ? (imG ? `<section class="near"><h2>${ig('question', 'sm')}คำทายที่ส่งไปแล้ว</h2><p class="hint">รอเพื่อนตัดสินว่าใกล้เคียงพอไหม ถ้าใช่ เพื่อนจะกดยอมรับให้</p><ul class="glist">${gl.map((x) => `<li><span class="gword">${esc(x.text)}</span></li>`).join('')}</ul></section>` : `<section class="near"><h2>${ig('check', 'sm')}ยอมรับคำทาย</h2><p class="hint"><b>${esc(gp.name)}</b> ทายมาแบบนี้ ถ้าเป็นคำทับศัพท์ ใกล้เคียง หรือใช้แทนกันได้ กดยอมรับให้ผ่านได้เลย</p><ul class="glist">${gl.map((x) => `<li><span class="gword">${esc(x.text)}</span><button class="btn mint sm" data-act="acceptg" data-id="${x.id}" data-t="${esc(x.text)}">${ig('check')}ยอมรับ</button></li>`).join('')}</ul></section>`) : '';
     const crew = S.players.filter((p) => p.id !== g).map((p, i) => `<li ${pp('hand', i)}>${avatar(p)}<span class="who"><b>${esc(p.name)}${p.id === S.me ? ' <span class="mute">(คุณ)</span>' : ''}</b><span class="sub mute">ผู้ช่วยตอบ ใช่ / ไม่ใช่</span></span></li>`).join('');
     const who = `<div class="turn pop" style="--i:0">${avatar(gp)}<span>${imG ? 'ตาคุณทายแล้ว!' : `<b>${esc(gp.name)}</b> กำลังทาย`}</span></div>`;
     const crewBox = crew ? `<section class="stack pop" style="--i:3"><h2>${imG ? 'เพื่อนที่ช่วยตอบในแอป' : 'ผู้ช่วย'}</h2><ul class="plist">${crew}</ul></section>` : '';
-    return `${top(timer())}<div class="split"><div class="stack lg">${who}${cat}<div class="pop" style="--i:1">${main}</div><div class="pop" style="--i:2">${guess}</div></div><div class="stack lg">${imG && gh.state === 'active' ? watchPanel(true) : ''}${crewBox}${hostEnd()}</div></div>`;
+    return `${top(timer())}<div class="split"><div class="stack lg">${who}${cat}<div class="pop" style="--i:1">${main}</div><div class="pop" style="--i:2">${guess}</div>${imG ? near : ''}</div><div class="stack lg">${imG ? '' : near}${imG && gh.state === 'active' ? watchPanel(true) : ''}${crewBox}${hostEnd()}</div></div>`;
   }
 
   function forbGame() {
@@ -321,7 +325,7 @@
       const timer = d.ends_at && !fin ? `<div class="timerwrap"><span class="timer num" data-end="${d.ends_at}" data-total="${d.minutes * 60000}">${ig('timer')}<span data-t></span></span><div class="bar"><i data-bar></i></div></div>` : '';
       body = `<div class="wtop">${d.category ? `<span class="catpill">หมวด <b>${esc(d.category)}</b></span>` : ''}${timer}</div>
         <div class="wcard ${fin ? (ok ? 'win' : 'dead') : ''}">${fin ? ig(ok ? 'banner-win' : 'banner-lose', 'wban') : ''}<span class="wlabel">${fin ? (ok ? `${esc(d.guesser)} ทายถูก!` : `${esc(d.guesser)} ทายไม่ออก · เฉลยคือ`) : `${esc(d.guesser)} กำลังทาย · ห้ามให้ผู้ทายเห็นจอนี้`}</span>${pic(d.emoji, 'xl wpic')}<span class="wword">${esc(d.word)}</span></div>
-        ${fin ? board : ''}`;
+        ${!fin && d.accept && d.guesses && d.guesses.length ? `<section class="near wnear"><h2>${ig('check', 'sm')}คำที่ ${esc(d.guesser)} ทาย · กดยอมรับถ้าใกล้เคียง</h2><ul class="glist">${d.guesses.map((x) => `<li><span class="gword">${esc(x.text)}</span><button class="btn mint sm" data-act="wacceptg" data-id="${x.id}" data-t="${esc(x.text)}">${ig('check')}ยอมรับ</button></li>`).join('')}</ul></section>` : ''} ${fin ? board : ''}`;
     }
     const html = `<div class="wrap-watch"><div class="wbar"><span class="roomcode">${WATCH}</span><span class="wname">จอแสดงคำ</span><a class="btn ghost sm" href="${location.pathname}">หน้าแรก</a></div>${body}</div>`;
     if (html === last) return; last = html; fired = false; $('#app').innerHTML = html; tick();
@@ -397,7 +401,8 @@
     game(t) { const v = t.dataset.v; patch(v, { cats: [], mode: v !== 'head' && S.settings.mode === 'chaos' ? 'all' : S.settings.mode }); }, mode(t) { patch(null, { mode: t.dataset.v }); },
     lvl(t) { const l = toggle(S.settings.levels, +t.dataset.v); if (l.length) patch(null, { levels: l }); },
     cat(t) { patch(null, { cats: toggle(S.settings.cats, t.dataset.v) }); },
-    mins(t) { patch(null, { minutes: +t.dataset.v }); }, reveal() { patch(null, { reveal: !S.settings.reveal }); },
+    mins(t) { patch(null, { minutes: +t.dataset.v }); }, reveal() { patch(null, { reveal: !S.settings.reveal }); }, accept_mode() { patch(null, { accept: !S.settings.accept }); },
+    acceptg(t) { if (confirm(`ยอมรับคำว่า "${t.dataset.t}" ให้ผ่าน?`)) act('mg_accept', { p_guess: +t.dataset.id }); }, async wacceptg(t) { if (!confirm(`ยอมรับคำว่า "${t.dataset.t}" ให้ผ่าน?`)) return; try { const { error } = await sb.rpc('mg_watch_accept', { p_room: WATCH, p_guess: +t.dataset.id }); if (error) throw new Error(error.message); ping(); } catch (e) { say(e.message); } watchPoll(); },
     start() { act('mg_start'); }, end() { act('mg_end'); }, tolobby() { act('mg_lobby'); },
     accuse(t) { act('mg_accuse', { p_target: t.dataset.id }); },
     vote(t) { FX.play('vote'); act('mg_vote', { p_claim: +t.dataset.id, p_yes: t.dataset.v === '1' }); },
@@ -405,7 +410,7 @@
       const i = $('#guess'); if (!i || !i.value.trim()) return;
       try {
         const ok = await call('mg_guess', { p_guess: i.value }); i.value = ''; ping();
-        if (!ok) { FX.play('wrong'); FX.vib(60); FX.shake($('.guessrow')); FX.peek('m-shock'); FX.banner('ยังไม่ใช่ ถามเพื่อนเพิ่มนะ', 'mascot-shock'); }
+        if (!ok) { FX.play('wrong'); FX.vib(60); FX.shake($('.guessrow')); FX.peek('m-shock'); FX.banner(S && S.game === 'solo' && S.settings.accept === true ? 'ยังไม่ตรงเป๊ะ ถ้าใกล้เคียง เพื่อนกดยอมรับให้ได้' : 'ยังไม่ใช่ ถามเพื่อนเพิ่มนะ', 'mascot-shock'); }
         await refresh();
       } catch (e) { say(e.message); }
     },
@@ -430,7 +435,7 @@
   setInterval(() => { if (sess && !WATCH && !document.hidden) refresh(); if (WATCH && !document.hidden) watchPoll(); }, 2500);
   setInterval(tick, 500);
 
-  const q = inviteCode(), wc = watchCode();
+  /* ปุ่มเลื่อนขึ้น/ลง */ (() => { const box = document.createElement('div'); box.id = 'scrollbtns'; box.hidden = true; box.innerHTML = '<button type="button" id="goup" aria-label="เลื่อนขึ้นบนสุด">▲</button><button type="button" id="godown" aria-label="เลื่อนลงล่างสุด">▼</button>'; document.body.appendChild(box); const de = document.documentElement; const upd = () => { const max = de.scrollHeight - innerHeight, y = scrollY; box.hidden = max < innerHeight * 0.35; $('#goup').style.visibility = y > 120 ? 'visible' : 'hidden'; $('#godown').style.visibility = y < max - 120 ? 'visible' : 'hidden'; }; $('#goup').onclick = () => scrollTo({ top: 0, behavior: 'smooth' }); $('#godown').onclick = () => scrollTo({ top: de.scrollHeight, behavior: 'smooth' }); addEventListener('scroll', upd, { passive: true }); addEventListener('resize', upd); new MutationObserver(upd).observe($('#app'), { childList: true, subtree: true }); upd(); })(); const q = inviteCode(), wc = watchCode();
   if (wc) startWatch(wc);
   else {
     if (q && sess && sess.room !== q) { sess = null; sv('mg.sess', null); }
