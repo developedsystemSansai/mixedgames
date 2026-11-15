@@ -360,3 +360,28 @@ input[type=text],input:not([type]){font-size:1.2rem}
 #music{right:66px}
 #music[aria-pressed="false"]{opacity:.75}
 .top{padding-right:118px}
+
+/* ---------- v6: เกมหมาป่า ---------- */
+.pick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:8px 0}
+.pickbtn{display:flex;align-items:center;gap:10px;min-width:0;padding:10px 12px;border:3px solid var(--ink);border-radius:16px;background:#fff;color:var(--ink);box-shadow:0 4px 0 var(--ink);cursor:pointer;font:inherit;font-weight:600;text-align:left;touch-action:manipulation}
+.pickbtn span:last-child{overflow-wrap:anywhere}
+.pickbtn[aria-pressed="true"]{background:var(--chili,#e63a2b);color:#fff}
+.pickbtn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.rolebox{display:flex;gap:14px;align-items:center}
+.rname{font-size:1.5rem}
+.seerres{padding:14px;border:3px solid var(--ink);border-radius:16px;font-size:1.2rem;font-weight:600;color:var(--ink)}
+.seerres.bad{background:#ffd1cc}.seerres.good{background:#d9f7e4}
+.tag.dead{background:#ddd;color:#333}
+.wtitle{text-align:center;margin:0}
+.newsline{font-size:1.25rem;font-weight:600;margin:4px 0}
+.hint.ok{color:#18794e}
+.recap{margin:0;padding-left:1.2rem;display:grid;gap:6px}
+body.wolfnight::before{filter:brightness(.35) saturate(.7) hue-rotate(15deg)}
+body.wolfnight #app>div{background:rgba(34,25,66,.95);color:#f4efff}
+body.wolfnight #app>div :is(h1,h2,.lead,.mute,.hint,.sub,p,.nm){color:#ece4ff}
+body.wolfnight .panel{background:#3a2c6b;box-shadow:0 4px 0 #120a2a;border-color:#120a2a}
+body.wolfnight .pickbtn{color:var(--ink)}
+body.wolfnight .pickbtn[aria-pressed="true"]{color:#fff}
+body.wolfnight .seerres{color:var(--ink)}
+body.wolfnight .tag{color:var(--ink)}
+@media (max-width:480px){.pick{grid-template-columns:1fr 1fr}.rolebox{flex-wrap:wrap}}
