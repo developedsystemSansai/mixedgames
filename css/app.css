@@ -420,3 +420,14 @@ body.sheetopen{overflow:hidden}
 
 .wolfset{margin:6px 0 0;padding:8px 14px;border:3px solid var(--ink);border-radius:14px;background:var(--sun,#ffd45c);color:var(--ink);font-weight:600}
 body.wolfnight .wolfset{color:var(--ink)}
+
+/* ผู้ดำเนินเกม */
+.pickbtn small{display:block;font-size:.82rem;line-height:1.25;color:var(--ink-2);font-weight:500}
+.pickbtn[aria-pressed="true"] small{color:var(--ink)}
+.modcard .row{display:flex;gap:12px;align-items:center}
+.modcard .rcwrap{flex:none}
+.modcard h2{margin:0}
+
+/* กลางคืน: ชื่อในตารางผู้เล่นต้องอ่านออกบนพื้นขาว */
+body.wolfnight .plist li .nm,body.wolfnight .plist li .nm .mute,body.wolfnight .plist li .sub{color:var(--ink)}
+body.wolfnight .plist li .sub,body.wolfnight .plist li .mute{color:var(--ink-2)}

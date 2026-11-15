@@ -1,0 +1,9 @@
+-- 011: โหมดผู้ดำเนินเกม (โฮสต์ไม่เล่น เห็นทุกบท กดแทนผู้เล่นได้) · สำหรับเล่นแบบเจอหน้ากัน
+-- (สถานะนี้ตรงกับฐานข้อมูลจริงที่ใช้งานอยู่ — migration ชื่อ mg_werewolf_moderator)
+--   settings.wolf.mod = true  → โฮสต์ไม่ถูกแจกบท (mg_wolf_init ตัดโฮสต์ออก ต้องมีผู้เล่นอีก >= 5 คน)
+--   mg_wolf_state: ถ้าผู้เรียกเป็นโฮสต์ของห้องที่เปิด mod จะได้มุมมองผู้ดำเนินเกม
+--       { mod:true, players:[{id,alive,revealed,role,lover}], acts, hist, pending:[{player,role}], need, voted, log, cub_double }
+--   mg_wolf_mod_act(room, player, token, actor, kind, target)  : โฮสต์กดแทนผู้เล่นตอนกลางคืน
+--   mg_wolf_mod_vote(room, player, token, actor, target)       : โฮสต์บันทึกโหวตแทนผู้เล่น
+--   mg_wolf_pending(room): ผู้เล่นที่ยังไม่ได้ทำหน้าที่ของคืนนี้ / ยังไม่ได้โหวต
+-- ตรรกะกลางอยู่ใน mg_wolf_act_as / mg_wolf_vote_as (ผู้เล่นกดเองก็เรียกตัวเดียวกัน)
