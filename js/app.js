@@ -28,7 +28,7 @@
     room_full: 'ห้องเต็มแล้ว (สูงสุด 10 คน)', name_taken: 'มีคนใช้ชื่อนี้ในห้องแล้ว', name_required: 'ใส่ชื่อก่อนนะ', need_players: 'ต้องมีอย่างน้อย 2 คน (โหมด 1 คนทายเริ่มคนเดียวได้)',
     few_words: 'คำในหมวดที่เลือกไม่พอ ลองเลือกหมวดเพิ่มหรือสุ่มทุกหมวด', host_only: 'เฉพาะโฮสต์เท่านั้น', already_open: 'มีคนจับคนนี้อยู่แล้ว', bad_state: 'ทำรายการนี้ไม่ได้ในตอนนี้', busy: 'ระบบยุ่งอยู่ ลองอีกครั้ง',
     guess_gone: 'คำทายนี้ถูกจัดการไปแล้ว',
-    need_5: 'เกมหมาป่าต้องมีอย่างน้อย 5 คน', bad_target: 'เลือกคนนี้ไม่ได้', not_allowed: 'ทำรายการนี้ไม่ได้', already_done: 'เลือกไปแล้ว เปลี่ยนไม่ได้',
+    need_5: 'เกมหมาป่าต้องมีอย่างน้อย 5 คน', bad_target: 'เลือกคนนี้ไม่ได้', not_allowed: 'ทำรายการนี้ไม่ได้', busy: 'ส่งเร็วเกินไป รอแป๊บนึง', empty: 'พิมพ์ข้อความก่อนนะ', already_done: 'เลือกไปแล้ว เปลี่ยนไม่ได้',
   };
   const P = {
     copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2"/>',
@@ -62,6 +62,7 @@
       const d = await call('mg_state'); offset = Date.parse(d.now) - Date.now();
       d.guesses = d.game === 'solo' && d.status === 'playing' && d.settings.accept === true ? await call('mg_guesses').catch(() => []) : [];
       d.wolf = d.game === 'wolf' && d.status !== 'lobby' ? await call('mg_wolf_state').catch(() => null) : null;
+      d.wchat = d.game === 'wolf' && d.status === 'playing' ? await call('mg_wolf_chat_list').catch(() => (S && S.room === d.room ? S.wchat : null) || []) : [];
       const prev = S; S = d; events(prev, d); notesSync(); render();
     } catch (e) { if (e.message === 'unauthorized') { say('ห้องนี้ปิดไปแล้ว หรือคุณถูกลบออกจากห้อง'); leaveLocal(); } }
     finally { busy = false; }
@@ -275,6 +276,7 @@
     const a = document.activeElement, id = a && a.id, val = a && a.value, pos = a && a.selectionStart;
     const app = $('#app'); app.innerHTML = html;
     if (enterNext) { app.firstElementChild.classList.add('enter'); enterNext = false; countUps(); }
+    document.querySelectorAll('.wchat-list').forEach((l) => { l.scrollTop = l.scrollHeight; });
     if (id) { const n = document.getElementById(id); if (n) { n.value = val; n.focus(); try { n.setSelectionRange(pos, pos); } catch {} } }
     tick();
   }
@@ -354,14 +356,18 @@
     const gal = RGROUPS.map(([t, ks]) => `<h3>${t}</h3><div class="rgrid">${ks.map((k) => `<button class="rbtn" data-act="rinfo" data-v="${k}" data-from="all">${rcard(ROLE[k].img, '', ROLE[k].n)}<span>${ROLE[k].n}</span></button>`).join('')}</div>`).join('');
     const idx = WORDER.indexOf(rv), prev = WORDER[(idx + WORDER.length - 1) % WORDER.length], next = WORDER[(idx + 1) % WORDER.length], frm = rvBack ? 'all' : '';
     const head = rv === 'all' ? '<h2>การ์ดบทบาททั้งหมด</h2>'
-      : `<div class="rs-nav">${rvBack ? '<button class="btn ghost sm" data-act="rall">← ทั้งหมด</button>' : ''}<button class="btn ghost sm arrow" data-act="rinfo" data-v="${prev}" data-from="${frm}" aria-label="การ์ดก่อนหน้า: ${ROLE[prev].n}">‹</button><span class="hint num">${idx + 1}/${WORDER.length}</span><button class="btn ghost sm arrow" data-act="rinfo" data-v="${next}" data-from="${frm}" aria-label="การ์ดถัดไป: ${ROLE[next].n}">›</button></div>`;
+      : `<div class="rs-nav">${rvBack ? '<button class="btn ghost sm rback" data-act="rall" aria-label="กลับไปการ์ดทั้งหมด"><span aria-hidden="true">←</span><span class="lbl"> ทั้งหมด</span></button>' : ''}<button class="btn ghost sm arrow" data-act="rinfo" data-v="${prev}" data-from="${frm}" aria-label="การ์ดก่อนหน้า: ${ROLE[prev].n}">‹</button><span class="hint num">${idx + 1}/${WORDER.length}</span><button class="btn ghost sm arrow" data-act="rinfo" data-v="${next}" data-from="${frm}" aria-label="การ์ดถัดไป: ${ROLE[next].n}">›</button></div>`;
     const body = rv === 'all' ? `<p class="hint">แตะการ์ดเพื่อดูรายละเอียด</p>${gal}` : (ROLE[rv] ? rdetail(rv) : '');
     root.innerHTML = `<div class="rsheet"><button class="rsheetbg" data-act="rclose" aria-label="ปิด"></button><div class="rsheetbox" role="dialog" aria-modal="true" aria-label="รายละเอียดการ์ดบทบาท"><div class="rs-head">${head}<button class="rs-x" data-act="rclose" aria-label="ปิด">✕</button></div><div class="rs-body">${body}</div><div class="rs-foot"><button class="btn primary block" data-act="rclose">ปิด</button></div></div></div>`;
     const bx = root.querySelector('.rs-x'); if (bx) bx.focus({ preventScroll: true });
     document.body.classList.add('sheetopen');
   }
 
-  addEventListener('keydown', (e) => { if (e.key === 'Escape' && rv) { rv = null; roleSheet(); } });
+  addEventListener('keydown', (e) => {
+    if (!rv) return;
+    if (e.key === 'Escape') { rv = null; roleSheet(); return; }
+    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && rv !== 'all' && ROLE[rv]) { const i = WORDER.indexOf(rv); rv = WORDER[(i + (e.key === 'ArrowRight' ? 1 : WORDER.length - 1)) % WORDER.length]; roleSheet(); }
+  });
 
   function wolfEvents(p, n) {
     const a = p.wolf, b = n.wolf; if (!a || !b) return;
@@ -384,6 +390,27 @@
     const me0 = a.players.find((x) => x.id === n.me), me1 = b.players.find((x) => x.id === n.me);
     if (me0 && me1 && me0.alive && !me1.alive) { FX.peek('m-cry'); FX.vib([80, 40, 80]); }
     if (a.role && b.role && a.role !== b.role) { FX.banner(`บทของคุณเปลี่ยนเป็น ${ROLE[b.role] ? ROLE[b.role].n : ''}`, 'question'); FX.play('start'); }
+  }
+
+
+  /* ---------- แชทเกมหมาป่า ----------
+     ช่อง 'wolf' (ลับ): ส่งได้เฉพาะหมาป่าที่ยังมีชีวิตตอนกลางคืน และเห็นได้เฉพาะหมาป่า (+ผู้ดำเนินเกม) · บังคับที่เซิร์ฟเวอร์ (mg_wolf_chat_*)
+     ช่อง 'all' : ผู้เล่นที่ยังมีชีวิตคุยกันตอนกลางวัน/โหวต · ผู้ดำเนินเกมส่งได้ทุกเวลา */
+  function wolfChatInfo(w) {
+    const me = (w.players || []).find((p) => p.id === S.me), role = w.role, st = S.settings.wolf || {};
+    const know = st.know !== false, night = w.phase === 'night', alive = w.alive !== false;
+    const ch = w.mod ? 'all' : isW(role) && alive && know && night ? 'wolf' : alive && !night ? 'all' : null;
+    let why = '';
+    if (!ch) why = w.mod ? '' : !alive ? 'คุณตายแล้ว ดูแชทได้อย่างเดียว' : night ? 'กลางคืนห้ามคุย หลับตารอเช้า' : '';
+    const canSee = w.mod || (isW(role) && know);
+    return { ch, why, canSee, me };
+  }
+  function wolfChat(w) {
+    const { ch, why, canSee } = wolfChatInfo(w), list = (S.wchat || []).filter((m) => m.ch !== 'wolf' || canSee); // กันซ้ำฝั่งเครื่อง: ข้อความช่องหมาป่าแสดงเฉพาะผู้มีสิทธิ์ (เซิร์ฟเวอร์ก็กรองให้อยู่แล้ว)
+    const msgs = list.map((m) => `<li class="cmsg ${m.ch === 'wolf' ? 'wolfonly' : ''} ${m.mine ? 'mine' : ''}"><span class="cwho">${m.ch === 'wolf' ? '🐺 ' : ''}${esc(m.name)}${m.mine ? ' (คุณ)' : ''}</span><span class="ctxt">${esc(m.text)}</span></li>`).join('');
+    const hint = canSee ? '<p class="hint">🐺 ข้อความที่มีป้ายหมาป่า เห็นได้เฉพาะหมาป่า (และผู้ดำเนินเกม) · ข้อความทั่วไปทุกคนเห็น</p>' : '<p class="hint">คุยกันได้ตอนกลางวันและตอนโหวต</p>';
+    const form = ch ? `<div class="cform"><input id="wcmsg" maxlength="200" autocomplete="off" enterkeyhint="send" placeholder="${ch === 'wolf' ? 'พิมพ์ถึงเพื่อนหมาป่า (ลับ)' : 'พิมพ์ถึงทุกคน'}" data-ch="${ch}"><button class="btn primary" data-act="wsay" aria-label="ส่งข้อความ">ส่ง</button></div><p class="hint">${ch === 'wolf' ? '🔒 ช่องนี้เห็นเฉพาะหมาป่า' : '💬 ช่องนี้ทุกคนเห็น'}</p>` : `<p class="hint">${why}</p>`;
+    return `<section ${pp('panel wchat', 3)}><h2>${ig('chat-bubbles', 'sm')}แชท</h2>${hint}<ul class="wchat-list" aria-live="polite">${msgs || '<li class="mute cempty">ยังไม่มีข้อความ</li>'}</ul>${form}</section>`;
   }
 
   function wolfGame() {
@@ -457,7 +484,7 @@
       else main = `<section ${pp('panel', 1)}><h2>โหวตไล่ใครออก?</h2>${role === 'mayor' ? '<p class="hint">คุณเป็นผู้ใหญ่บ้าน โหวตของคุณนับ 2 เสียง</p>' : ''}${pick('wvote', 'vote', others, mine.vote)}<button class="btn ghost block" data-act="wvote" data-id="">${'vote' in mine && !mine.vote ? '✓ ' : ''}งดออกเสียง</button><p class="hint">โหวตแล้ว ${w.voted}/${w.need} · เปลี่ยนใจได้จนกว่าทุกคนจะโหวต</p></section>`;
       if (host) hostBtn = '<button class="btn ghost block" data-act="wskip">ปิดโหวตเลย</button>';
     }
-    return `${top(tm)}<div class="split"><div class="stack lg"><h1 class="wtitle pop">${title}</h1>${main}${hostBtn}</div><div class="stack lg">${card}<section ${pp('panel', 2)}><h2>ผู้เล่น</h2>${roster}</section>${hostEnd()}</div></div>`;
+    return `${top(tm)}<div class="split"><div class="stack lg"><h1 class="wtitle pop">${title}</h1>${main}${hostBtn}</div><div class="stack lg">${card}<section ${pp('panel', 2)}><h2>ผู้เล่น</h2>${roster}</section>${wolfChat(w)}${hostEnd()}</div></div>`;
   }
 
 
@@ -530,7 +557,7 @@
       main = `<section ${pp('panel', 1)}><h2>บันทึกโหวต</h2><p class="hint">ให้ทุกคนชี้พร้อมกัน แล้วแตะ “คนโหวต” จากนั้นแตะ “คนที่ถูกโหวต” (ผู้ใหญ่บ้านนับ 2 เสียงอัตโนมัติ) · โหวตแล้ว ${w.voted}/${w.need}</p><div class="pick">${voters.map(vtile).join('')}</div>${mvoter ? `<h2>${nm(mvoter)} โหวตใคร?</h2>${pick('mvote', 'vote', mvoter, alive.filter((p) => p.id !== mvoter), null)}<button class="btn ghost block" data-act="mvote" data-id="">งดออกเสียง</button>` : ''}</section>${rank.length ? `<section class="panel"><h2>คะแนนตอนนี้</h2><ul class="glist">${rank.map(([id, c]) => `<li><span>${nm(id)}</span><b class="num">${c} เสียง</b></li>`).join('')}</ul></section>` : ''}`;
       hostBtn = '<button class="btn ghost block" data-act="wskip">ปิดโหวตเลย</button>';
     }
-    return `${top(tm)}<div class="split"><div class="stack lg"><h1 class="wtitle pop">${title}</h1>${main}${hostBtn}</div><div class="stack lg">${banner}<section ${pp('panel', 2)}><h2>ผู้เล่นและบทบาท</h2>${roster}</section>${hostEnd()}</div></div>`;
+    return `${top(tm)}<div class="split"><div class="stack lg"><h1 class="wtitle pop">${title}</h1>${main}${hostBtn}</div><div class="stack lg">${banner}<section ${pp('panel', 2)}><h2>ผู้เล่นและบทบาท</h2>${roster}</section>${wolfChat(w)}${hostEnd()}</div></div>`;
   }
 
   function wolfOver() {
@@ -693,6 +720,11 @@
     wday(t) { patch(null, { wolf: { ...(S.settings.wolf || {}), day: +t.dataset.v } }); },
     wreveal() { const cur = S.settings.wolf || {}; patch(null, { wolf: { ...cur, reveal: cur.reveal === false } }); },
     nact(t) { const k = t.dataset.k, ask = { see: 'เลือกส่อง', heal: 'ใช้ยาชุบชีวิตช่วย', poison: 'ใช้ยาพิษกับ', steal: 'ขโมยบทบาทของ' }[k]; if (ask && !confirm(`${ask} ${PL(t.dataset.id).name}?`)) return; FX.play('click'); act('mg_wolf_act', { p_kind: k, p_target: t.dataset.id }); },
+    async wsay() {
+      const el = document.getElementById('wcmsg'); if (!el) return; const text = el.value.trim(); if (!text) return;
+      el.value = ''; try { await call('mg_wolf_chat_send', { p_ch: el.dataset.ch, p_text: text }); ping(); } catch (e) { el.value = text; say(e.message); }
+      await refresh(); const n = document.getElementById('wcmsg'); if (n) n.focus();
+    },
     wvote(t) { FX.play('vote'); act('mg_wolf_vote', { p_target: t.dataset.id || null }); },
     wskip() { if (confirm('ข้ามไปช่วงถัดไปเลย?')) act('mg_wolf_skip'); },
     start() { act('mg_start'); }, end() { act('mg_end'); }, tolobby() { act('mg_lobby'); },
@@ -722,7 +754,7 @@
     if (e.key === 'Escape' && rv) { rv = null; return roleSheet(); }
     if (e.key === 'Escape' && N.open) return noteOpen(false);
     if (e.key !== 'Enter') return;
-    if (e.target.id === 'guess') A.guess(); else if (e.target.id === 'code') A.join(); else if (e.target.id === 'ntext') noteAdd();
+    if (e.target.id === 'guess') A.guess(); else if (e.target.id === 'code') A.join(); else if (e.target.id === 'ntext') noteAdd(); else if (e.target.id === 'wcmsg') A.wsay();
   });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
   setInterval(() => { if (sess && !WATCH && !document.hidden) refresh(); if (WATCH && !document.hidden) watchPoll(); }, 2500);

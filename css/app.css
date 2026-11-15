@@ -455,3 +455,43 @@ body.sheetopen #scrollbtns{display:none}
 .rs-nav{flex-wrap:nowrap}
 .rs-nav .btn.sm:not(.arrow){white-space:nowrap}
 .rgrid .rcard{aspect-ratio:2/3;object-fit:cover;height:auto}
+
+/* ---------- แผงดูการ์ด v2: แก้ส่วนที่ทับกัน ---------- */
+.rsheet{z-index:64}
+/* ตอนเปิดแผงการ์ด ซ่อนของลอยอื่นที่เคยโผล่ทับ (ปุ่มเสียง/เพลง มาสคอต ตัวเลขลอย แบนเนอร์ ปุ่มสมุดจด) */
+body.sheetopen .round,body.sheetopen .peek,body.sheetopen .floaty,body.sheetopen #banners,body.sheetopen .fab,body.sheetopen #splash{display:none!important}
+.rs-head{display:grid;grid-template-columns:minmax(0,1fr) 44px;align-items:center;column-gap:10px}
+.rs-head>h2{grid-column:1}
+.rs-nav{min-width:0;gap:6px;justify-content:flex-start}
+.rs-nav .btn.sm{flex:none}
+.rs-nav .hint{flex:1 1 auto;min-width:2.6em;white-space:nowrap}
+@media (max-width:359px){
+  .rs-head{padding:10px 10px 8px 12px;column-gap:6px}
+  .rs-nav .rback .lbl{display:none}
+  .rs-nav .btn.sm,.rs-nav .arrow{min-width:40px;min-height:40px;padding-inline:8px}
+  .rs-x{width:40px;height:40px}
+  .rs-head{grid-template-columns:minmax(0,1fr) 40px}
+}
+/* จอแนวนอน: ตัดปุ่มปิดด้านล่าง (มี ✕ อยู่แล้ว) ให้เนื้อหามีที่ และวางการ์ดไว้ซ้าย ข้อความไว้ขวา */
+@media (max-height:520px){
+  .rs-foot{display:none}
+  .rs-head{padding-block:8px}
+  .rsheetbox{max-height:100dvh;border-radius:18px 18px 0 0}
+  .rdetail{grid-template-columns:auto minmax(0,1fr);column-gap:18px;justify-items:start;text-align:left;align-items:start}
+  .rdetail .rcard.big{grid-row:1/span 7;grid-column:1;width:min(26vw,150px);margin:0}
+  .rdetail>*:not(.rcard){grid-column:2}
+}
+
+/* ---------- แชทเกมหมาป่า ---------- */
+.wchat-list{list-style:none;margin:0;padding:10px;display:grid;gap:8px;align-content:start;max-height:min(38dvh,300px);overflow-y:auto;overscroll-behavior:contain;background:var(--white,#fff);border:3px solid var(--ink);border-radius:16px}
+.cmsg{display:grid;gap:2px;padding:8px 12px;border-radius:14px;background:#f4ead8;color:var(--ink);overflow-wrap:anywhere;max-width:92%}
+.cmsg.mine{justify-self:end;background:#d9f3e6}
+.cmsg.wolfonly{background:#3a2430;color:#fff;border:2px solid #c0392b}
+.cmsg.wolfonly .cwho{color:#ffb3a6}
+.cwho{font-size:.78rem;font-weight:600;color:var(--ink-2)}
+.ctxt{font-size:1rem;line-height:1.4}
+.cempty{padding:4px}
+.cform{display:flex;gap:8px;align-items:stretch}
+.cform input{flex:1;min-width:0}
+.cform .btn{flex:none}
+body.wolfnight .cmsg:not(.wolfonly){color:var(--ink)}
