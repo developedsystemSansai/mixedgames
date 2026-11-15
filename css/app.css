@@ -417,3 +417,6 @@ body.wolfnight .rcard{filter:drop-shadow(0 5px 0 rgba(0,0,0,.5))}
 .rgrid .rcard{width:100%}
 body.sheetopen{overflow:hidden}
 @media (min-width:700px){.sheet{place-items:center}.sheetbox{border-radius:26px}}
+
+.wolfset{margin:6px 0 0;padding:8px 14px;border:3px solid var(--ink);border-radius:14px;background:var(--sun,#ffd45c);color:var(--ink);font-weight:600}
+body.wolfnight .wolfset{color:var(--ink)}
