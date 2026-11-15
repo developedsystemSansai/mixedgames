@@ -385,3 +385,16 @@ body.wolfnight .pickbtn[aria-pressed="true"]{color:#fff}
 body.wolfnight .seerres{color:var(--ink)}
 body.wolfnight .tag{color:var(--ink)}
 @media (max-width:480px){.pick{grid-template-columns:1fr 1fr}.rolebox{flex-wrap:wrap}}
+
+
+/* ---------- เกมหมาป่า: รูปไพ่บทบาท ---------- */
+.rcard{display:block;height:auto;user-select:none;-webkit-user-drag:none;border-radius:8%/5.5%;filter:drop-shadow(0 5px 0 rgba(42,20,8,.35))}
+.rcard.big{width:min(62vw,250px);margin-inline:auto;animation:flipIn .7s var(--spring) both}
+.rcard.team{width:min(34vw,130px);margin-inline:auto}
+.rcard.thumb{width:48px;flex:none;filter:drop-shadow(0 2px 0 rgba(42,20,8,.35))}
+.rolebox{display:grid;gap:12px;justify-items:center;text-align:center}
+.rolebox .rname{font:600 1.4rem var(--display)}
+.rolestrip{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:12px;justify-items:center}
+.rolestrip figure{margin:0;display:grid;justify-items:center;gap:6px;text-align:center;font-weight:600;font-size:.95rem}
+.rolestrip .rcard{width:100%;max-width:110px}
+body.wolfnight .rcard{filter:drop-shadow(0 5px 0 rgba(0,0,0,.5))}
