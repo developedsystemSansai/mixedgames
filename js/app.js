@@ -347,15 +347,21 @@
 
   /* หน้าต่างดูรายละเอียดการ์ด */
   let rv = null, rvBack = false;
-  const rdetail = (k) => { const R = ROLE[k]; return `<div class="rdetail">${rcard(R.img, 'big', R.n)}<h2>${R.n} <span class="mute">${R.en}</span></h2><p><span class="tag ${R.team === 'wolf' ? 'dead' : ''}">${TEAM[R.team]}</span></p><p>${R.d}</p><h3>ความสามารถ</h3><p class="hint">${R.ab}</p><h3>เงื่อนไขชนะ</h3><p class="hint">${WINTXT[R.team]}${k === 'cupid' ? ' · หรือ "คู่รักชนะ" ถ้าคู่รักคนละฝ่ายเหลือกันสองคนสุดท้าย' : ''}</p></div>`; };
+  const rdetail = (k) => { const R = ROLE[k]; return `<div class="rdetail">${rcard(R.img, 'big', R.n)}<h2>${R.n}</h2><p class="ren">${R.en}</p><p><span class="tag ${R.team === 'wolf' ? 'dead' : ''}">${TEAM[R.team]}</span></p><p class="rdesc">${R.d}</p><div class="rinfo"><h3>ความสามารถ</h3><p>${R.ab}</p></div><div class="rinfo"><h3>เงื่อนไขชนะ</h3><p>${WINTXT[R.team]}${k === 'cupid' ? ' · หรือ "คู่รักชนะ" ถ้าคู่รักคนละฝ่ายเหลือกันสองคนสุดท้าย' : ''}</p></div></div>`; };
   function roleSheet() {
     const root = $('#role-root'); if (!root) return;
     if (!rv) { root.innerHTML = ''; document.body.classList.remove('sheetopen'); return; }
     const gal = RGROUPS.map(([t, ks]) => `<h3>${t}</h3><div class="rgrid">${ks.map((k) => `<button class="rbtn" data-act="rinfo" data-v="${k}" data-from="all">${rcard(ROLE[k].img, '', ROLE[k].n)}<span>${ROLE[k].n}</span></button>`).join('')}</div>`).join('');
-    const body = rv === 'all' ? `<h2>การ์ดบทบาททั้งหมด</h2><p class="hint">แตะการ์ดเพื่อดูรายละเอียด</p>${gal}` : `${rvBack ? '<button class="btn ghost sm" data-act="rall">← การ์ดทั้งหมด</button>' : ''}${ROLE[rv] ? rdetail(rv) : ''}`;
-    root.innerHTML = `<div class="sheet"><button class="sheetbg" data-act="rclose" aria-label="ปิด"></button><div class="sheetbox" role="dialog" aria-modal="true">${body}<button class="btn primary block" data-act="rclose">ปิด</button></div></div>`;
+    const idx = WORDER.indexOf(rv), prev = WORDER[(idx + WORDER.length - 1) % WORDER.length], next = WORDER[(idx + 1) % WORDER.length], frm = rvBack ? 'all' : '';
+    const head = rv === 'all' ? '<h2>การ์ดบทบาททั้งหมด</h2>'
+      : `<div class="rs-nav">${rvBack ? '<button class="btn ghost sm" data-act="rall">← ทั้งหมด</button>' : ''}<button class="btn ghost sm arrow" data-act="rinfo" data-v="${prev}" data-from="${frm}" aria-label="การ์ดก่อนหน้า: ${ROLE[prev].n}">‹</button><span class="hint num">${idx + 1}/${WORDER.length}</span><button class="btn ghost sm arrow" data-act="rinfo" data-v="${next}" data-from="${frm}" aria-label="การ์ดถัดไป: ${ROLE[next].n}">›</button></div>`;
+    const body = rv === 'all' ? `<p class="hint">แตะการ์ดเพื่อดูรายละเอียด</p>${gal}` : (ROLE[rv] ? rdetail(rv) : '');
+    root.innerHTML = `<div class="rsheet"><button class="rsheetbg" data-act="rclose" aria-label="ปิด"></button><div class="rsheetbox" role="dialog" aria-modal="true" aria-label="รายละเอียดการ์ดบทบาท"><div class="rs-head">${head}<button class="rs-x" data-act="rclose" aria-label="ปิด">✕</button></div><div class="rs-body">${body}</div><div class="rs-foot"><button class="btn primary block" data-act="rclose">ปิด</button></div></div></div>`;
+    const bx = root.querySelector('.rs-x'); if (bx) bx.focus({ preventScroll: true });
     document.body.classList.add('sheetopen');
   }
+
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && rv) { rv = null; roleSheet(); } });
 
   function wolfEvents(p, n) {
     const a = p.wolf, b = n.wolf; if (!a || !b) return;
