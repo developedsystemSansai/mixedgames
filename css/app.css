@@ -398,3 +398,22 @@ body.wolfnight .tag{color:var(--ink)}
 .rolestrip figure{margin:0;display:grid;justify-items:center;gap:6px;text-align:center;font-weight:600;font-size:.95rem}
 .rolestrip .rcard{width:100%;max-width:110px}
 body.wolfnight .rcard{filter:drop-shadow(0 5px 0 rgba(0,0,0,.5))}
+
+/* ---------- การ์ดบทบาท: ปุ่มกดดูรายละเอียด + หน้าต่างรายละเอียด ---------- */
+.rbtn{display:block;width:100%;padding:0;border:0;background:none;color:inherit;font:inherit;cursor:pointer;text-align:center}
+.rbtn:focus-visible{outline:3px solid var(--sun);outline-offset:3px;border-radius:12px}
+.rbtn:active{transform:scale(.97)}
+.thumbbtn{width:48px;flex:none}
+.rolebox .rbtn{width:auto}
+.sheet{position:fixed;inset:0;z-index:60;display:grid;place-items:end center;padding:0}
+.sheetbg{position:absolute;inset:0;border:0;background:rgba(20,10,4,.62);cursor:pointer}
+.sheetbox{position:relative;width:min(100%,640px);max-height:88vh;overflow:auto;background:var(--paper,#fff7e8);color:var(--ink);border:3px solid var(--ink);border-radius:26px 26px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom,0px));display:grid;gap:12px;animation:popIn .35s var(--spring) both}
+.sheetbox h2,.sheetbox h3{margin:0}
+.sheetbox .rcard.big{width:min(56vw,230px)}
+.rdetail{display:grid;gap:8px;justify-items:center;text-align:center}
+.rdetail p{margin:0}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px}
+.rgrid .rbtn{display:grid;gap:6px;font-weight:600;font-size:.92rem}
+.rgrid .rcard{width:100%}
+body.sheetopen{overflow:hidden}
+@media (min-width:700px){.sheet{place-items:center}.sheetbox{border-radius:26px}}

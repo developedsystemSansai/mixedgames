@@ -125,7 +125,7 @@
     : n.hands.filter((h) => h.state === 'active').map((h) => h.player));
   function finale(n) {
     if (n.game === 'wolf') {
-      const w = n.wolf, won = w && w.winner && ((w.winner === 'wolf') === isW(w.role));
+      const w = n.wolf, won = w && w.winner && iWon(w);
       if (won) { FX.play('win'); FX.cannons(); FX.rain(2600); FX.flash('gold'); FX.vib([40, 40, 140]); } else FX.play('lose');
       return;
     }
@@ -170,9 +170,9 @@
       : `<section ${pp('panel', 3)}><h2>${ig(GAMES[g].icon, 'sm')}${GAMES[g].name}</h2><p class="mute">${GAMES[g].rule}</p><p class="hint">โหมด ${(g === 'head' ? MODES : MODES2)[md]} · ${st.minutes ? st.minutes + ' นาที' : 'ไม่จำกัดเวลา'}</p></section>`;
     const wst = st.wolf || {}, plan = wolfPlan(n, wst), wsec = wst.day || 120, wrev = wst.reveal !== false;
     const curRoles = Array.isArray(wst.roles) ? wst.roles : (plan.N >= 6 ? ['seer', 'guard'] : ['seer']);
-    const strip = WORDER.filter((k) => plan.roles[k] > 0).map((k) => `<figure>${rcard(ROLE[k].img, '', ROLE[k].n)}<figcaption>${ROLE[k].n} <b>×${plan.roles[k]}</b></figcaption></figure>`).join('');
+    const strip = WORDER.filter((k) => plan.roles[k] > 0).map((k) => `<figure><button class="rbtn" data-act="rinfo" data-v="${k}" aria-label="ดูรายละเอียด ${ROLE[k].n}">${rcard(ROLE[k].img, '', ROLE[k].n)}</button><figcaption>${ROLE[k].n} <b>×${plan.roles[k]}</b></figcaption></figure>`).join('');
     const cfg = host ? `<hr class="divider"><h2>เลือกการ์ดบทพิเศษ</h2><p class="hint">แตะเพื่อเปิด/ปิด ที่เหลือระบบเติมเป็นชาวบ้านให้เอง</p>${chips(WOPT, (k) => `<button class="chip" data-act="wrole" data-v="${k}" aria-pressed="${curRoles.includes(k)}">${ROLE[k].e} ${ROLE[k].n}</button>`)}<h2>จำนวนหมาป่า <span class="hint">(สูงสุด ${plan.maxW} คนสำหรับ ${plan.N} คน)</span></h2>${chips([0, 1, 2, 3], (v) => `<button class="chip" data-act="wwolves" data-v="${v}" aria-pressed="${(wst.wolves || 0) === v}" ${v > plan.maxW ? 'disabled' : ''}>${v || 'อัตโนมัติ'}</button>`)}` : '';
-    const wolfSet = `<section ${pp('panel', 3)}><h2>${ig('m-angry', 'sm')}หมาป่า</h2><p class="mute">${GAMES.wolf.rule}</p><p class="hint">การ์ดสำหรับ ${plan.N} คน (ระบบสุ่มแจก ไม่มีใครรู้บทของคนอื่น)</p><div class="rolestrip">${strip}</div>${plan.dropped.length ? `<p class="hint warn">คนไม่พอ จึงตัดออก: ${plan.dropped.map((k) => ROLE[k].n).join(', ')}</p>` : ''}<p class="hint">กติกาพื้นฐานคงเดิม: มีหมาป่าอย่างน้อย 1 ตัว และไม่เกินครึ่งหนึ่งของผู้เล่น · ชาวบ้านชนะเมื่อหมาป่าหมด หมาป่าชนะเมื่อมีจำนวนไม่น้อยกว่าคนที่เหลือ</p>${cfg}${host ? `<hr class="divider"><h2>${ig('timer', 'sm')}เวลาคุยตอนกลางวัน</h2>${chips([60, 120, 180], (x) => `<button class="chip" data-act="wday" data-v="${x}" aria-pressed="${wsec === x}">${x / 60} นาที</button>`)}<button class="chip" data-act="wreveal" aria-pressed="${wrev}">เปิดเผยบทบาทคนที่ตาย</button>` : `<p class="hint">คุยตอนกลางวัน ${wsec / 60} นาที · ${wrev ? 'เปิดเผย' : 'ไม่เปิดเผย'}บทบาทคนที่ตาย</p>`}</section>`;
+    const wolfSet = `<section ${pp('panel', 3)}><h2>${ig('m-angry', 'sm')}หมาป่า</h2><p class="mute">${GAMES.wolf.rule}</p><p class="hint">การ์ดสำหรับ ${plan.N} คน (ระบบสุ่มแจก ไม่มีใครรู้บทของคนอื่น)</p><div class="rolestrip">${strip}</div><button class="btn ghost sm" data-act="rall">ดูการ์ดบทบาททั้งหมด · แตะการ์ดเพื่อดูรายละเอียด</button>${plan.dropped.length ? `<p class="hint warn">คนไม่พอ จึงตัดออก: ${plan.dropped.map((k) => ROLE[k].n).join(', ')}</p>` : ''}<p class="hint">กติกาพื้นฐานคงเดิม: มีหมาป่าอย่างน้อย 1 ตัว และไม่เกินครึ่งหนึ่งของผู้เล่น · ชาวบ้านชนะเมื่อหมาป่าหมด หมาป่าชนะเมื่อมีจำนวนไม่น้อยกว่าคนที่เหลือ</p>${cfg}${host ? `<hr class="divider"><h2>${ig('timer', 'sm')}เวลาคุยตอนกลางวัน</h2>${chips([60, 120, 180], (x) => `<button class="chip" data-act="wday" data-v="${x}" aria-pressed="${wsec === x}">${x / 60} นาที</button>`)}<button class="chip" data-act="wreveal" aria-pressed="${wrev}">เปิดเผยบทบาทคนที่ตาย</button>` : `<p class="hint">คุยตอนกลางวัน ${wsec / 60} นาที · ${wrev ? 'เปิดเผย' : 'ไม่เปิดเผย'}บทบาทคนที่ตาย</p>`}</section>`;
     const minP = g === 'solo' ? 1 : g === 'wolf' ? 5 : 2;
     const wait = !host ? `<div ${pp('say', 4)}>${ig('m-sleep')}<p>รอโฮสต์กดเริ่มเกมนะ</p></div>` : n < minP ? `<div ${pp('say', 4)}>${ig('mascot-wave')}<p>${g === 'wolf' ? `เกมหมาป่าต้องมีอย่างน้อย 5 คน (ตอนนี้ ${n} คน) ชวนเพื่อนเพิ่มนะ` : 'ชวนเพื่อนอีกอย่างน้อย 1 คนก่อนเริ่ม (สนุกสุด 5–10 คน)'}</p></div>` : '';
     return `${top()}<div class="stack lg">
@@ -299,52 +299,83 @@
 
   /* ---------- เกมหมาป่า ---------- */
   const ROLE = {
-    wolf: { n: 'หมาป่า', e: '🐺', img: 'wolf', d: 'กลางคืนเลือกกินชาวบ้าน 1 คน กลางวันแกล้งเป็นชาวบ้าน อย่าให้ถูกจับได้' },
-    seer: { n: 'หมอดู', e: '🔮', img: 'seer', d: 'ทุกคืนเลือกส่อง 1 คน แล้วรู้ทันทีว่าเป็นหมาป่าหรือไม่' },
-    guard: { n: 'ผู้คุ้มกัน', e: '🛡️', img: 'guard', d: 'ทุกคืนเลือกปกป้อง 1 คน (เลือกตัวเองได้) ถ้าหมาป่ากินคนนั้น เขาจะรอด' },
-    villager: { n: 'ชาวบ้าน', e: '🧑‍🌾', img: 'villager', d: 'ไม่มีพลังพิเศษ ช่วยกันสังเกตแล้วโหวตหาหมาป่า' },
-    alpha: { n: 'จ่าฝูงหมาป่า', e: '👑', img: 'alpha', d: 'นับเป็นหมาป่า (หมอดูส่องเห็นเป็นหมาป่า) ตอนหมาป่าเลือกเหยื่อ เสียงของคุณชี้ขาดเมื่อคะแนนเสมอ' },
-    witch: { n: 'แม่มด', e: '🧪', img: 'witch', d: 'มียาชุบชีวิต 1 ขวด (ช่วยเหยื่อของคืนนั้น) กับยาพิษ 1 ขวด (ฆ่าใครก็ได้ 1 คน) ใช้ได้อย่างละครั้งตลอดเกม และคืนหนึ่งใช้ได้อย่างเดียว' },
-    mayor: { n: 'ผู้ใหญ่บ้าน', e: '🎖️', img: 'mayor', d: 'ตอนกลางวันโหวตของคุณนับเป็น 2 เสียง' },
-    idiot: { n: 'คนซื่อ', e: '🤪', img: 'idiot', d: 'ถ้าถูกโหวตออกครั้งแรกจะไม่ตาย แต่ต้องเปิดไพ่และเสียสิทธิ์โหวตตั้งแต่นั้น' },
+    wolf: { n: 'หมาป่า', e: '🐺', img: 'wolf', en: 'WEREWOLF', team: 'wolf', d: 'ตื่นในเวลากลางคืน ร่วมกันเลือกเหยื่อ 1 คน และต้องปกปิดตัวตนในตอนกลางวัน', ab: 'กลางคืน: เลือกเหยื่อร่วมกับหมาป่าตัวอื่น (คนที่ได้เสียงมากสุดจะถูกกิน) และเห็นว่าใครเป็นเพื่อนหมาป่า' },
+    alpha: { n: 'จ่าฝูงหมาป่า', e: '👑', img: 'alpha', en: 'ALPHA WOLF', team: 'wolf', d: 'ร่วมเลือกเหยื่อกับหมาป่า มีสิทธิ์ตัดสินเมื่อเลือกไม่ตรงกัน', ab: 'กลางคืน: เลือกเหยื่อเหมือนหมาป่า และเสียงของจ่าฝูงชี้ขาดเมื่อคะแนนเสมอ หมอดูส่องแล้วเห็นเป็นหมาป่า' },
+    cub: { n: 'ลูกหมาป่า', e: '🐾', img: 'cub', en: 'WOLF CUB', team: 'wolf', d: 'เป็นสมาชิกหมาป่า หากถูกกำจัด อาจทำให้หมาป่าได้สิทธิ์ฆ่าเพิ่ม', ab: 'กลางคืน: เลือกเหยื่อร่วมกับหมาป่า · ถ้าลูกหมาป่าตาย (ด้วยวิธีใดก็ตาม) คืนถัดไปหมาป่าจะเลือกเหยื่อได้ 2 คน' },
+    villager: { n: 'ชาวบ้าน', e: '🧑‍🌾', img: 'villager', en: 'VILLAGER', team: 'village', d: 'ไม่มีความสามารถพิเศษ วิเคราะห์พฤติกรรมและคำพูด ร่วมโหวตหาหมาป่า', ab: 'กลางวัน: คุย สังเกต และโหวตหาหมาป่า' },
+    seer: { n: 'หมอดู', e: '🔮', img: 'seer', en: 'SEER', team: 'village', d: 'ตรวจสอบผู้เล่น 1 คนในแต่ละคืน ระบบแจ้งผลว่าผู้เล่นเป็นหมาป่าหรือไม่', ab: 'กลางคืน: เลือกส่อง 1 คน (หมาป่าทุกชนิดรวมจ่าฝูงและลูกหมาป่าจะเห็นเป็น "หมาป่า")' },
+    guard: { n: 'ผู้คุ้มกัน', e: '🛡️', img: 'guard', en: 'BODYGUARD', team: 'village', d: 'เลือกปกป้องผู้เล่น 1 คนต่อคืน เป้าหมายจะรอดจากการโจมตี', ab: 'กลางคืน: เลือกปกป้อง 1 คน (เลือกตัวเองได้) ป้องกันได้ทั้งหมาป่าและนักล่า' },
+    witch: { n: 'แม่มด', e: '🧪', img: 'witch', en: 'WITCH', team: 'village', d: 'มียาชุบชีวิต 1 ครั้ง และยาพิษ 1 ครั้ง เลือกใช้หรือไม่ใช้ในแต่ละคืน', ab: 'กลางคืน: เห็นเหยื่อของหมาป่า เลือกชุบชีวิตหรือวางยาพิษได้ (คืนละอย่างเดียว ยาแต่ละขวดใช้ได้ครั้งเดียวตลอดเกม)' },
+    hunter: { n: 'นายพราน', e: '🏹', img: 'hunter', en: 'HUNTER', team: 'village', d: 'เมื่อถูกกำจัด สามารถเลือกยิงผู้เล่น 1 คน ให้ตายทันที', ab: 'กลางคืน: เลือกเป้าหมายที่จะยิงไว้ล่วงหน้า (เปลี่ยนได้ทุกคืน) พอตาย ไม่ว่าถูกกินหรือถูกโหวตออก จะยิงเป้านั้นตายตามทันที' },
+    cupid: { n: 'กามเทพ', e: '💘', img: 'cupid', en: 'CUPID', team: 'village', d: 'เลือกผู้เล่น 2 คนเป็นคู่รัก หากคนหนึ่งตาย อีกคนตายตาม', ab: 'คืนแรก: เลือกคู่รัก 2 คน (เลือกตัวเองได้) · ถ้าคู่รักเป็นคนละฝ่ายและเหลือกันสองคนสุดท้าย คู่รักชนะ' },
+    littlegirl: { n: 'เด็กหญิง', e: '👧', img: 'littlegirl', en: 'LITTLE GIRL', team: 'special', d: 'แอบสังเกตหมาป่าในคืนได้ แต่มีความเสี่ยงที่จะถูกจับได้', ab: 'กลางคืน: แอบดูได้ 1 ครั้ง จะรู้ชื่อหมาป่า 1 ตัว แต่มีโอกาสราว 1 ใน 3 ที่ถูกจับได้และตายตอนเช้า' },
+    mayor: { n: 'ผู้ใหญ่บ้าน', e: '🎖️', img: 'mayor', en: 'MAYOR', team: 'special', d: 'คะแนนโหวตของคุณมีน้ำหนัก 2 เสียง', ab: 'กลางวัน: โหวตของคุณนับเป็น 2 เสียง' },
+    idiot: { n: 'คนโง่ประจำหมู่บ้าน', e: '🤪', img: 'idiot', en: 'IDIOT', team: 'special', d: 'เมื่อถูกโหวตออก อาจไม่ตาย แต่เสียสิทธิ์โหวต', ab: 'กลางวัน: ถ้าถูกโหวตออกครั้งแรกจะไม่ตาย แต่ต้องเปิดไพ่และเสียสิทธิ์โหวตตั้งแต่นั้น (ถ้าถูกโหวตอีกจะตาย)' },
+    killer: { n: 'นักล่า', e: '🔪', img: 'killer', en: 'SERIAL KILLER', team: 'solo', d: 'ฆ่าผู้เล่นหนึ่งคนทุกคืน และมีเงื่อนไขชนะเป็นของตัวเอง', ab: 'กลางคืน: เลือกฆ่า 1 คน (ผู้คุ้มกันปกป้องได้) หมอดูส่องแล้วเห็นว่าไม่ใช่หมาป่า · ชนะเมื่อรอดเป็นคนสุดท้าย' },
+    infected: { n: 'ผู้ติดเชื้อ', e: '🦠', img: 'infected', en: 'INFECTED', team: 'special', d: 'เปลี่ยนฝ่ายตามเงื่อนไขที่กำหนด', ab: 'เริ่มเป็นฝ่ายชาวบ้าน · ถ้าหมาป่าเลือกกินคุณ (และไม่มีใครช่วย) คุณจะไม่ตาย แต่ถูกเปลี่ยนเป็นหมาป่าและได้รู้จักเพื่อนหมาป่า' },
+    thief: { n: 'จอมโจร', e: '🦹', img: 'thief', en: 'THIEF', team: 'special', d: 'สามารถเปลี่ยนหรือแลกเปลี่ยนบทบาทในคืนแรก', ab: 'คืนแรก: เลือกขโมยบทบาทของผู้เล่น 1 คน คุณจะได้บทของเขา และเขากลายเป็นชาวบ้าน (หรือเลือกไม่ขโมยก็ได้)' },
   };
-  const isW = (r) => r === 'wolf' || r === 'alpha';
-  const WOPT = ['seer', 'guard', 'witch', 'idiot', 'mayor', 'alpha'], WORDER = ['wolf', 'alpha', 'seer', 'guard', 'witch', 'idiot', 'mayor', 'villager'];
+  const TEAM = { wolf: 'ฝ่ายหมาป่า', village: 'ฝ่ายชาวบ้าน', special: 'บทเสริม / พิเศษ', solo: 'อิสระ' };
+  const WINTXT = { wolf: 'หมาป่าชนะเมื่อมีจำนวนไม่น้อยกว่าคนที่เหลือ', village: 'ชาวบ้านชนะเมื่อกำจัดหมาป่าทั้งหมด (และนักล่า) ได้', special: 'ชนะตามฝ่ายที่ตัวเองสังกัดเมื่อจบเกม (ผู้ติดเชื้อที่กลายเป็นหมาป่าจะชนะฝั่งหมาป่า)', solo: 'ชนะคนเดียวเมื่อรอดเป็นผู้เล่นคนสุดท้าย' };
+  const RGROUPS = [['ฝ่ายหมาป่า', ['wolf', 'alpha', 'cub']], ['ฝ่ายชาวบ้าน', ['villager', 'seer', 'witch', 'guard', 'hunter', 'cupid']], ['บทเสริม', ['littlegirl', 'mayor', 'idiot']], ['พิเศษ / อิสระ', ['killer', 'infected', 'thief']]];
   const rcard = (img, c = '', alt = '') => `<img class="rcard ${c}" src="assets/wolf/${img}.webp" alt="${esc(alt)}" decoding="async" draggable="false">`;
+  const isW = (r) => r === 'wolf' || r === 'alpha' || r === 'cub';
+  const WSPEC = ['seer', 'guard', 'witch', 'hunter', 'cupid', 'littlegirl', 'idiot', 'mayor', 'killer', 'infected', 'thief'];
+  const WOPT = ['seer', 'guard', 'witch', 'hunter', 'cupid', 'littlegirl', 'idiot', 'mayor', 'killer', 'infected', 'thief', 'alpha', 'cub'];
+  const WORDER = ['wolf', 'alpha', 'cub', 'seer', 'guard', 'witch', 'hunter', 'cupid', 'littlegirl', 'idiot', 'mayor', 'killer', 'infected', 'thief', 'villager'];
   // คำนวณชุดการ์ดแบบเดียวกับ mg_wolf_init ฝั่งเซิร์ฟเวอร์ (กติกาพื้นฐาน: หมาป่า >= 1 และไม่เกินครึ่งของผู้เล่น)
   const wolfPlan = (n, wst = {}) => {
     const N = Math.max(n, 5), maxW = Math.floor((N - 1) / 2), auto = N <= 6 ? 1 : N <= 9 ? 2 : 3;
     const sel = Array.isArray(wst.roles) ? wst.roles : (N >= 6 ? ['seer', 'guard'] : ['seer']);
-    const nw = Math.max(1, Math.min(wst.wolves || auto, maxW)), roles = {}, dropped = [];
-    let used = nw; if (sel.includes('alpha')) { roles.alpha = 1; roles.wolf = nw - 1; } else roles.wolf = nw;
-    for (const k of ['seer', 'guard', 'witch', 'idiot', 'mayor']) if (sel.includes(k)) { if (used < N) { roles[k] = 1; used++; } else dropped.push(k); }
+    const nw = Math.max(1, Math.min(wst.wolves || auto, maxW)), roles = { wolf: nw }, dropped = [];
+    if (sel.includes('alpha')) { roles.alpha = 1; roles.wolf--; }
+    if (sel.includes('cub')) { if (nw >= 2 || !sel.includes('alpha')) { roles.cub = 1; roles.wolf--; } else dropped.push('cub'); }
+    let used = nw;
+    for (const k of WSPEC) if (sel.includes(k)) { if (used < N) { roles[k] = 1; used++; } else dropped.push(k); }
     roles.villager = N - used;
     return { roles, nw, maxW, dropped, N };
   };
   let wolfHide = false;
   const wlog = (w, t, day) => [...w.log].reverse().find((e) => e.t === t && (day == null || e.day === day));
-  const roleName = (w, id) => { const p = w.players.find((x) => x.id === id); return p && p.role ? ROLE[p.role].n : ''; };
+  const roleName = (w, id) => { const p = w.players.find((x) => x.id === id); return p && p.role && ROLE[p.role] ? ROLE[p.role].n : ''; };
+  const WHY = { wolf: 'ถูกหมาป่ากินตาย', poison: 'ถูกวางยาตาย', killer: 'ถูกนักล่าฆ่าตาย', caught: 'แอบดูหมาป่าแล้วถูกจับได้', shot: 'ถูกนายพรานยิงตาย', love: 'ตรอมใจตายตามคู่รัก', vote: 'ถูกโหวตออก' };
+  const deaths = (e) => (!e ? [] : e.t === 'vote' ? [...(e.dead ? [{ p: e.dead, why: 'vote' }] : []), ...(e.extra || [])]
+    : [...(e.dead ? [{ p: e.dead, why: 'wolf' }] : []), ...(e.dead2 ? [{ p: e.dead2, why: 'poison' }] : []), ...(e.extra || [])]);
+  const iWon = (w) => (w.winner === 'wolf' ? isW(w.role) : w.winner === 'village' ? !isW(w.role) && w.role !== 'killer' : w.winner === 'killer' ? w.role === 'killer' : w.winner === 'lovers' ? !!w.lover : false);
+
+  /* หน้าต่างดูรายละเอียดการ์ด */
+  let rv = null, rvBack = false;
+  const rdetail = (k) => { const R = ROLE[k]; return `<div class="rdetail">${rcard(R.img, 'big', R.n)}<h2>${R.n} <span class="mute">${R.en}</span></h2><p><span class="tag ${R.team === 'wolf' ? 'dead' : ''}">${TEAM[R.team]}</span></p><p>${R.d}</p><h3>ความสามารถ</h3><p class="hint">${R.ab}</p><h3>เงื่อนไขชนะ</h3><p class="hint">${WINTXT[R.team]}${k === 'cupid' ? ' · หรือ "คู่รักชนะ" ถ้าคู่รักคนละฝ่ายเหลือกันสองคนสุดท้าย' : ''}</p></div>`; };
+  function roleSheet() {
+    const root = $('#role-root'); if (!root) return;
+    if (!rv) { root.innerHTML = ''; document.body.classList.remove('sheetopen'); return; }
+    const gal = RGROUPS.map(([t, ks]) => `<h3>${t}</h3><div class="rgrid">${ks.map((k) => `<button class="rbtn" data-act="rinfo" data-v="${k}" data-from="all">${rcard(ROLE[k].img, '', ROLE[k].n)}<span>${ROLE[k].n}</span></button>`).join('')}</div>`).join('');
+    const body = rv === 'all' ? `<h2>การ์ดบทบาททั้งหมด</h2><p class="hint">แตะการ์ดเพื่อดูรายละเอียด</p>${gal}` : `${rvBack ? '<button class="btn ghost sm" data-act="rall">← การ์ดทั้งหมด</button>' : ''}${ROLE[rv] ? rdetail(rv) : ''}`;
+    root.innerHTML = `<div class="sheet"><button class="sheetbg" data-act="rclose" aria-label="ปิด"></button><div class="sheetbox" role="dialog" aria-modal="true">${body}<button class="btn primary block" data-act="rclose">ปิด</button></div></div>`;
+    document.body.classList.add('sheetopen');
+  }
 
   function wolfEvents(p, n) {
     const a = p.wolf, b = n.wolf; if (!a || !b) return;
     const nm = (id) => (n.players.find((x) => x.id === id) || { name: '?' }).name;
+    const seq = (ds, icon, withRole) => ds.slice(0, 4).forEach((d, i) => setTimeout(() => { const r = withRole ? roleName(b, d.p) : ''; FX.banner(`${nm(d.p)} ${WHY[d.why]}${r ? ' · เป็น' + r : ''}`, icon); }, i * 1900));
     if (a.phase !== b.phase || a.day_no !== b.day_no) {
       if (b.phase === 'day') {
-        const e = wlog(b, 'night', a.day_no);
-        if (e && (e.dead || e.dead2)) {
-          if (e.dead) FX.banner(`${nm(e.dead)} ถูกหมาป่ากินตาย!`, 'mascot-cry');
-          if (e.dead2) setTimeout(() => FX.banner(`${nm(e.dead2)} ถูกวางยาตาย!`, 'mascot-cry'), e.dead ? 1800 : 0);
-          FX.play('lose'); FX.shake(); FX.vib([60, 40, 120]);
-        } else { FX.banner('เมื่อคืนไม่มีใครตาย', 'check'); FX.play('correct'); }
+        const ds = deaths(wlog(b, 'night', a.day_no));
+        if (ds.length) { seq(ds, 'mascot-cry'); FX.play('lose'); FX.shake(); FX.vib([60, 40, 120]); }
+        else { FX.banner('เมื่อคืนไม่มีใครตาย', 'check'); FX.play('correct'); }
       } else if (b.phase === 'vote') { FX.banner('ได้เวลาโหวตแล้ว!', 'question'); FX.play('start'); }
       else if (b.phase === 'night') {
-        const e = wlog(b, 'vote', a.day_no), r = e && e.dead ? roleName(b, e.dead) : '';
-        FX.banner(e && e.idiot ? `${nm(e.idiot)} คือคนซื่อ! รอดตายแต่เสียสิทธิ์โหวต` : e && e.dead ? `${nm(e.dead)} ถูกโหวตออก${r ? ' · เป็น' + r : ''}` : 'โหวตเสมอ ไม่มีใครถูกโหวตออก', e && e.dead ? 'wrong' : 'check');
-        FX.play(e && e.dead ? 'buzz' : 'tick2'); setTimeout(() => FX.banner('กลางคืนมาถึงแล้ว หลับตาได้', 'm-sleep'), 2600);
+        const e = wlog(b, 'vote', a.day_no), ds = deaths(e);
+        if (e && e.idiot) { FX.banner(`${nm(e.idiot)} คือคนโง่ประจำหมู่บ้าน! รอดตายแต่เสียสิทธิ์โหวต`, 'check'); FX.play('tick2'); }
+        else if (ds.length) { seq(ds, 'wrong', true); FX.play('buzz'); }
+        else { FX.banner('โหวตเสมอ ไม่มีใครถูกโหวตออก', 'check'); FX.play('tick2'); }
+        setTimeout(() => FX.banner('กลางคืนมาถึงแล้ว หลับตาได้', 'm-sleep'), 2600 + Math.max(0, ds.length - 1) * 1900);
       }
     }
     const me0 = a.players.find((x) => x.id === n.me), me1 = b.players.find((x) => x.id === n.me);
     if (me0 && me1 && me0.alive && !me1.alive) { FX.peek('m-cry'); FX.vib([80, 40, 80]); }
+    if (a.role && b.role && a.role !== b.role) { FX.banner(`บทของคุณเปลี่ยนเป็น ${ROLE[b.role] ? ROLE[b.role].n : ''}`, 'question'); FX.play('start'); }
   }
 
   function wolfGame() {
@@ -355,41 +386,65 @@
     const title = w.phase === 'night' ? `กลางคืนที่ ${w.day_no}` : w.phase === 'day' ? `กลางวันที่ ${w.day_no}` : 'ลงคะแนนโหวต';
     const tm = w.phase_end ? `<div class="timerwrap"><span class="timer num" data-end="${w.phase_end}" data-total="${w.phase_secs * 1000}">${ig('timer')}<span data-t></span></span><div class="bar"><i data-bar></i></div></div>` : '';
     const mates = isW(role) ? w.players.filter((p) => isW(p.role) && p.id !== S.me).map((p) => esc(PL(p.id).name)) : [];
-    const card = `<section ${pp('panel rolecard', 0)}><div class="row between"><h2>บทบาทของคุณ</h2><button class="btn ghost sm" data-act="wolfhide">${wolfHide ? 'ดูการ์ด' : 'ซ่อนการ์ด'}</button></div>${wolfHide ? '<p class="hint">ซ่อนอยู่ กดดูอีกครั้งตอนไม่มีใครมอง</p>' : `<div class="rolebox">${rcard(R.img, 'big', R.n)}<div><b class="rname">${R.n}</b><p class="hint">${R.d}</p>${mates.length ? `<p class="hint">เพื่อนหมาป่า: <b>${mates.join(', ')}</b></p>` : isW(role) ? '<p class="hint">คุณเป็นหมาป่าตัวเดียว</p>' : ''}</div></div>`}</section>`;
-    const roster = `<ul class="plist">${w.players.map((p) => { const pl = PL(p.id); return `<li class="${p.alive ? '' : 'off'}">${avatar(pl)}<span class="nm">${esc(pl.name)}${p.id === S.me ? ' <span class="mute">(คุณ)</span>' : ''}</span>${p.alive ? `<span class="tag">${p.revealed ? 'เปิดไพ่ · ' + (ROLE[p.role] ? ROLE[p.role].n : '') : 'ยังอยู่'}</span>` : `<span class="tag dead">ตาย${p.role ? ' · ' + ROLE[p.role].n : ''}</span>`}</li>`; }).join('')}</ul>`;
+    const lover = w.lover ? PL(w.lover) : null;
+    const was = w.was && w.was !== role && ROLE[w.was] ? `<p class="hint warn">บทของคุณเปลี่ยนไปแล้ว (เดิมคือ ${ROLE[w.was].n})</p>` : '';
+    const card = `<section ${pp('panel rolecard', 0)}><div class="row between"><h2>บทบาทของคุณ</h2><div class="row"><button class="btn ghost sm" data-act="rall">ดูทุกบท</button><button class="btn ghost sm" data-act="wolfhide">${wolfHide ? 'ดูการ์ด' : 'ซ่อนการ์ด'}</button></div></div>${wolfHide ? '<p class="hint">ซ่อนอยู่ กดดูอีกครั้งตอนไม่มีใครมอง</p>' : `<div class="rolebox"><button class="rbtn" data-act="rinfo" data-v="${role}" aria-label="ดูรายละเอียด ${R.n}">${rcard(R.img, 'big', R.n)}</button><div><b class="rname">${R.n}</b><p class="hint">${R.d}</p>${mates.length ? `<p class="hint">เพื่อนหมาป่า: <b>${mates.join(', ')}</b></p>` : isW(role) ? '<p class="hint">คุณเป็นหมาป่าตัวเดียว</p>' : ''}${lover ? `<p class="hint">💘 คุณเป็นคู่รักกับ <b>${esc(lover.name)}</b> ถ้าคนหนึ่งตาย อีกคนตายตาม</p>` : ''}${was}<button class="btn ghost sm" data-act="rinfo" data-v="${role}">รายละเอียดบทนี้</button></div></div>`}</section>`;
+    const roster = `<ul class="plist">${w.players.map((p) => { const pl = PL(p.id); return `<li class="${p.alive ? '' : 'off'}">${avatar(pl)}<span class="nm">${esc(pl.name)}${p.id === S.me ? ' <span class="mute">(คุณ)</span>' : ''}</span>${p.alive ? `<span class="tag">${p.revealed ? 'เปิดไพ่ · ' + (ROLE[p.role] ? ROLE[p.role].n : '') : 'ยังอยู่'}</span>` : `<span class="tag dead">ตาย${p.role && ROLE[p.role] ? ' · ' + ROLE[p.role].n : ''}</span>`}</li>`; }).join('')}</ul>`;
     const pick = (act, kind, list, chosen) => `<div class="pick">${list.map((p) => `<button class="pickbtn" data-act="${act}" data-k="${kind}" data-id="${p.id}" aria-pressed="${chosen === p.id}">${avatar(PL(p.id))}<span>${esc(PL(p.id).name)}</span></button>`).join('')}</div>`;
+    const okLine = (t) => `<p class="hint ok">${t}</p>`;
+    const passBtn = (label) => `<button class="btn ghost block" data-act="wnpass">${label}</button>`;
     const dead = `<section ${pp('panel', 1)}><h2>คุณตายแล้ว</h2>${ig('m-cry', 'sm')}<p class="hint">ดูเพื่อนเล่นต่อเงียบๆ ห้ามบอกใบ้นะ</p></section>`;
     const seerNotes = role === 'seer' && (w.seer || []).length ? `<section class="panel"><h2>ผลที่ส่องมา</h2><ul class="glist">${w.seer.map((x) => `<li><span>คืนที่ ${x.day}: <b>${esc(PL(x.target).name)}</b></span><span class="tag ${x.wolf ? 'dead' : ''}">${x.wolf ? 'หมาป่า' : 'ไม่ใช่หมาป่า'}</span></li>`).join('')}</ul></section>` : '';
+    const peekNotes = role === 'littlegirl' && (w.peeks || []).length ? `<section class="panel"><h2>หมาป่าที่แอบเห็น</h2><ul class="glist">${w.peeks.map((x) => `<li><span>คืนที่ ${x.day}: <b>${esc(PL(x.target).name)}</b></span><span class="tag dead">หมาป่า</span></li>`).join('')}</ul></section>` : '';
+    const sleep = `<section ${pp('panel', 1)}><h2>หลับตาอยู่…</h2>${ig('m-sleep')}<p class="hint">คืนนี้ไม่มีอะไรให้ทำ หลับตาหรือวางมือถือไว้ รอเช้า ห้ามแอบดู</p></section>`;
     let main = '', hostBtn = '';
     if (w.phase === 'night') {
+      const d1 = w.day_no === 1;
       if (!alive) main = dead;
       else if (isW(role)) {
         const prey = w.players.filter((p) => p.alive && !isW(p.role));
-        const picks = (w.wolf_picks || []).filter((x) => x.from !== S.me && x.to).map((x) => `${esc(PL(x.from).name)} เลือก ${esc(PL(x.to).name)}`);
-        main = `<section ${pp('panel', 1)}><h2>เลือกเหยื่อของคืนนี้</h2><p class="hint">แตะชื่อเพื่อเลือก ถ้ามีหมาป่าหลายตัว คนที่ได้เสียงมากสุดจะถูกกิน</p>${pick('nact', 'kill', prey, mine.kill)}${picks.length ? `<p class="hint">${picks.join(' · ')}</p>` : ''}${mine.kill ? '<p class="hint ok">เลือกแล้ว รอคืนนี้จบ (เปลี่ยนใจได้จนกว่าทุกคนเลือกครบ)</p>' : ''}</section>`;
+        const seen = (k) => (w.wolf_picks || []).filter((x) => x.kind === k && x.from !== S.me && x.to).map((x) => `${esc(PL(x.from).name)} เลือก ${esc(PL(x.to).name)}`);
+        const s1 = seen('kill'), s2 = seen('kill2');
+        main = `<section ${pp('panel', 1)}><h2>เลือกเหยื่อของคืนนี้</h2><p class="hint">แตะชื่อเพื่อเลือก ถ้ามีหมาป่าหลายตัว คนที่ได้เสียงมากสุดจะถูกกิน</p>${pick('nact', 'kill', prey, mine.kill)}${s1.length ? `<p class="hint">${s1.join(' · ')}</p>` : ''}${w.cub_double ? `<h2>ลูกหมาป่าตายไปแล้ว! เลือกเหยื่อคนที่ 2</h2>${pick('nact', 'kill2', prey, mine.kill2)}${s2.length ? `<p class="hint">${s2.join(' · ')}</p>` : ''}` : ''}${mine.kill && (!w.cub_double || mine.kill2) ? okLine('เลือกแล้ว รอคืนนี้จบ (เปลี่ยนใจได้จนกว่าทุกคนเลือกครบ)') : ''}</section>`;
       } else if (role === 'seer') {
         const res = (w.seer || []).find((x) => x.day === w.day_no);
         main = `<section ${pp('panel', 1)}><h2>เลือกคนที่จะส่อง</h2>${res ? `<div class="seerres ${res.wolf ? 'bad' : 'good'}"><b>${esc(PL(res.target).name)}</b> ${res.wolf ? 'เป็นหมาป่า!' : 'ไม่ใช่หมาป่า'}</div><p class="hint">จำไว้ แล้วรอเช้า ห้ามบอกใครในตอนนี้</p>` : pick('nact', 'see', others, null)}</section>${seerNotes}`;
       } else if (role === 'guard') {
-        main = `<section ${pp('panel', 1)}><h2>เลือกคนที่จะปกป้อง</h2><p class="hint">ถ้าหมาป่าเลือกกินคนนี้ เขาจะรอด (เลือกตัวเองได้)</p>${pick('nact', 'guard', w.players.filter((p) => p.alive), mine.guard)}${mine.guard ? '<p class="hint ok">เลือกแล้ว รอเช้า</p>' : ''}</section>`;
+        main = `<section ${pp('panel', 1)}><h2>เลือกคนที่จะปกป้อง</h2><p class="hint">ถ้าหมาป่า (หรือนักล่า) เลือกคนนี้ เขาจะรอด (เลือกตัวเองได้)</p>${pick('nact', 'guard', w.players.filter((p) => p.alive), mine.guard)}${mine.guard ? okLine('เลือกแล้ว รอเช้า') : ''}</section>`;
       } else if (role === 'witch') {
-        const wi = w.witch || {}, vic = wi.victim, vn = vic ? esc(PL(vic).name) : '';
-        if (wi.done) main = `<section ${pp('panel', 1)}><h2>คืนนี้คุณจัดการแล้ว</h2><p class="hint ok">รอเช้า ห้ามบอกใคร</p></section>`;
+        const wi = w.witch || {}, vics = [wi.victim, wi.victim2].filter(Boolean);
+        if (wi.done) main = `<section ${pp('panel', 1)}><h2>คืนนี้คุณจัดการแล้ว</h2>${okLine('รอเช้า ห้ามบอกใคร')}</section>`;
         else if (wi.heal_used && wi.poison_used) main = `<section ${pp('panel', 1)}><h2>ยาหมดแล้ว</h2>${ig('m-sleep')}<p class="hint">คุณใช้ยาครบทั้งสองขวดแล้ว หลับตารอเช้าได้เลย</p></section>`;
-        else main = `<section ${pp('panel', 1)}><h2>ยาของแม่มด</h2><p class="hint">${vic ? `คืนนี้หมาป่าเลือกกิน <b>${vn}</b>` : 'หมาป่ายังเลือกเหยื่อไม่เสร็จ รอสักครู่ (ถ้าจะชุบชีวิตต้องรอเห็นเหยื่อก่อน)'}</p>${!wi.heal_used ? `<button class="btn mint block" data-act="nact" data-k="heal" data-id="${vic || ''}" ${vic ? '' : 'disabled'}>ใช้ยาชุบชีวิตช่วย ${vn || 'เหยื่อ'}</button>` : '<p class="hint">ยาชุบชีวิตใช้ไปแล้ว</p>'}${!wi.poison_used ? `<h2>หรือใช้ยาพิษกับใคร?</h2>${pick('nact', 'poison', others, null)}` : '<p class="hint">ยาพิษใช้ไปแล้ว</p>'}<button class="btn ghost block" data-act="wpass">คืนนี้ไม่ใช้ยา</button><p class="hint">คืนหนึ่งใช้ได้อย่างเดียว และใช้แต่ละขวดได้ครั้งเดียวตลอดเกม</p></section>`;
-      } else main = `<section ${pp('panel', 1)}><h2>หลับตาอยู่…</h2>${ig('m-sleep')}<p class="hint">คืนนี้ไม่มีอะไรให้ทำ หลับตาหรือวางมือถือไว้ รอเช้า ห้ามแอบดู</p></section>`;
+        else main = `<section ${pp('panel', 1)}><h2>ยาของแม่มด</h2><p class="hint">${vics.length ? `คืนนี้หมาป่าเลือกกิน <b>${vics.map((v) => esc(PL(v).name)).join(' และ ')}</b>` : 'หมาป่ายังเลือกเหยื่อไม่เสร็จ รอสักครู่ (ถ้าจะชุบชีวิตต้องรอเห็นเหยื่อก่อน)'}</p>${!wi.heal_used ? (vics.length ? vics.map((v) => `<button class="btn mint block" data-act="nact" data-k="heal" data-id="${v}">ใช้ยาชุบชีวิตช่วย ${esc(PL(v).name)}</button>`).join('') : '<button class="btn mint block" disabled>ใช้ยาชุบชีวิต (รอเห็นเหยื่อก่อน)</button>') : '<p class="hint">ยาชุบชีวิตใช้ไปแล้ว</p>'}${!wi.poison_used ? `<h2>หรือใช้ยาพิษกับใคร?</h2>${pick('nact', 'poison', others, null)}` : '<p class="hint">ยาพิษใช้ไปแล้ว</p>'}<button class="btn ghost block" data-act="wpass">คืนนี้ไม่ใช้ยา</button><p class="hint">คืนหนึ่งใช้ได้อย่างเดียว และใช้แต่ละขวดได้ครั้งเดียวตลอดเกม</p></section>`;
+      } else if (role === 'hunter') {
+        const cur = mine.shoot || w.shoot;
+        main = `<section ${pp('panel', 1)}><h2>เลือกเป้าหมายที่จะยิง</h2><p class="hint">ถ้าคุณถูกกำจัดไม่ว่าด้วยวิธีใด จะยิงคนนี้ตายทันที${d1 ? '' : ' (เปลี่ยนเป้าได้ทุกคืน)'}</p>${pick('nact', 'shoot', others, cur)}${cur ? okLine('ตั้งเป้าแล้ว') : ''}${d1 && !mine.shoot && !mine.pass ? passBtn('ยังไม่เลือกตอนนี้') : ''}</section>`;
+      } else if (role === 'cupid' && d1) {
+        const nmOf = (id) => esc(PL(id).name);
+        if (mine.love2 || mine.pass) main = `<section ${pp('panel', 1)}><h2>จับคู่เรียบร้อย</h2>${mine.love2 ? `<p class="hint">💘 <b>${nmOf(mine.love1)}</b> กับ <b>${nmOf(mine.love2)}</b> เป็นคู่รักกันแล้ว</p>` : '<p class="hint">คืนนี้คุณไม่จับคู่</p>'}${okLine('รอเช้า ห้ามบอกใคร')}</section>`;
+        else if (mine.love1) main = `<section ${pp('panel', 1)}><h2>เลือกคู่รักคนที่ 2</h2><p class="hint">คนที่ 1: <b>${nmOf(mine.love1)}</b></p>${pick('nact', 'love2', w.players.filter((p) => p.alive && p.id !== mine.love1), null)}</section>`;
+        else main = `<section ${pp('panel', 1)}><h2>เลือกคู่รักคนที่ 1</h2><p class="hint">เลือกผู้เล่น 2 คนให้เป็นคู่รัก (เลือกตัวเองได้) ถ้าคนหนึ่งตาย อีกคนตายตาม</p>${pick('nact', 'love1', w.players.filter((p) => p.alive), null)}${passBtn('ไม่จับคู่')}</section>`;
+      } else if (role === 'littlegirl') {
+        const res = (w.peeks || []).find((x) => x.day === w.day_no);
+        main = `<section ${pp('panel', 1)}><h2>แอบดูหมาป่า</h2>${res ? `<div class="seerres bad"><b>${esc(PL(res.target).name)}</b> เป็นหมาป่า!</div><p class="hint">จำไว้ ถ้าโชคร้ายคุณอาจถูกจับได้ตอนเช้า รอเช้า ห้ามบอกใคร</p>` : mine.pass ? okLine('คืนนี้ไม่แอบดู รอเช้า') : `<p class="hint">แอบดูได้ 1 ครั้งต่อคืน จะรู้ชื่อหมาป่า 1 ตัว แต่มีโอกาสราว 1 ใน 3 ที่ถูกจับได้และตายตอนเช้า</p><button class="btn sun block" data-act="wnpeek">แอบดูเลย (เสี่ยง!)</button>${passBtn('คืนนี้ไม่แอบดู')}`}</section>${peekNotes}`;
+      } else if (role === 'killer') {
+        main = `<section ${pp('panel', 1)}><h2>เลือกคนที่จะฆ่า</h2><p class="hint">คุณเป็นฝ่ายอิสระ ฆ่าได้ทุกคืน ชนะเมื่อรอดเป็นคนสุดท้าย</p>${pick('nact', 'slay', others, mine.slay)}${mine.slay ? okLine('เลือกแล้ว รอเช้า (เปลี่ยนใจได้จนกว่าทุกคนทำเสร็จ)') : mine.pass ? okLine('คืนนี้ไม่ฆ่าใคร') : passBtn('คืนนี้ไม่ฆ่าใคร')}</section>`;
+      } else if (role === 'thief' && d1) {
+        main = `<section ${pp('panel', 1)}><h2>เลือกคนที่จะขโมยบทบาท</h2><p class="hint">คุณจะได้บทของเขาตอนเช้า และเขากลายเป็นชาวบ้าน</p>${mine.steal ? `<p class="hint ok">เลือกขโมยบทของ <b>${esc(PL(mine.steal).name)}</b> แล้ว รอเช้า</p>` : mine.pass ? okLine('คืนนี้ไม่ขโมย รอเช้า') : `${pick('nact', 'steal', others, null)}${passBtn('ไม่ขโมย')}`}</section>`;
+      } else main = sleep;
       if (host) hostBtn = '<button class="btn ghost block" data-act="wskip">ข้ามคืนนี้เลย</button>';
     } else if (w.phase === 'day') {
       const ev = wlog(w, 'night', w.day_no), lv = w.day_no > 1 ? wlog(w, 'vote', w.day_no - 1) : null;
-      const nws = []; if (ev && ev.dead) nws.push(`<b>${esc(PL(ev.dead).name)}</b> ถูกหมาป่ากินตาย${roleName(w, ev.dead) ? ' · เป็น' + roleName(w, ev.dead) : ''}`);
-      if (ev && ev.dead2) nws.push(`<b>${esc(PL(ev.dead2).name)}</b> ถูกวางยาตาย${roleName(w, ev.dead2) ? ' · เป็น' + roleName(w, ev.dead2) : ''}`);
-      const news = nws.length ? 'เมื่อคืน ' + nws.join(' และ ') : 'เมื่อคืนไม่มีใครตาย';
-      main = `<section ${pp('panel', 1)}><h2>เช้าแล้ว</h2><p class="newsline">${news}</p>${lv ? `<p class="hint">เมื่อวานโหวต: ${lv.idiot ? `${esc(PL(lv.idiot).name)} คือคนซื่อ! รอดตายแต่เสียสิทธิ์โหวต` : lv.dead ? `${esc(PL(lv.dead).name)} ถูกโหวตออก` : 'เสมอ ไม่มีใครถูกโหวตออก'}</p>` : ''}<p class="hint">ช่วยกันคุย ถามกัน หาคนที่ท่าทางแปลกๆ แล้วโหวตเมื่อหมดเวลา</p></section>${seerNotes}`;
+      const line = (d) => `<b>${esc(PL(d.p).name)}</b> ${WHY[d.why]}${roleName(w, d.p) ? ' · เป็น' + roleName(w, d.p) : ''}`;
+      const nds = deaths(ev), vds = deaths(lv);
+      const news = nds.length ? 'เมื่อคืน ' + nds.map(line).join(' · ') : 'เมื่อคืนไม่มีใครตาย';
+      const vnews = lv ? (lv.idiot ? `${esc(PL(lv.idiot).name)} คือคนโง่ประจำหมู่บ้าน! รอดตายแต่เสียสิทธิ์โหวต` : vds.length ? vds.map((d) => `${esc(PL(d.p).name)} ${WHY[d.why]}`).join(' · ') : 'เสมอ ไม่มีใครถูกโหวตออก') : '';
+      main = `<section ${pp('panel', 1)}><h2>เช้าแล้ว</h2><p class="newsline">${news}</p>${lv ? `<p class="hint">เมื่อวานโหวต: ${vnews}</p>` : ''}<p class="hint">ช่วยกันคุย ถามกัน หาคนที่ท่าทางแปลกๆ แล้วโหวตเมื่อหมดเวลา</p></section>${seerNotes}${peekNotes}`;
       if (host) hostBtn = '<button class="btn sun block" data-act="wskip">เริ่มโหวตเลย</button>';
     } else {
       if (!alive) main = `${dead}<p class="hint">โหวตแล้ว ${w.voted}/${w.need}</p>`;
-      else if (w.revealed) main = `<section ${pp('panel', 1)}><h2>คุณเปิดไพ่แล้ว</h2><p class="hint">คุณคือคนซื่อ ยังอยู่ในเกมแต่ไม่มีสิทธิ์โหวตแล้ว · โหวตแล้ว ${w.voted}/${w.need}</p></section>`;
-      else main = `<section ${pp('panel', 1)}><h2>โหวตไล่ใครออก?</h2>${pick('wvote', 'vote', others, mine.vote)}<button class="btn ghost block" data-act="wvote" data-id="">${'vote' in mine && !mine.vote ? '✓ ' : ''}งดออกเสียง</button><p class="hint">โหวตแล้ว ${w.voted}/${w.need} · เปลี่ยนใจได้จนกว่าทุกคนจะโหวต</p></section>`;
+      else if (w.revealed) main = `<section ${pp('panel', 1)}><h2>คุณเปิดไพ่แล้ว</h2><p class="hint">คุณคือคนโง่ประจำหมู่บ้าน ยังอยู่ในเกมแต่ไม่มีสิทธิ์โหวตแล้ว · โหวตแล้ว ${w.voted}/${w.need}</p></section>`;
+      else main = `<section ${pp('panel', 1)}><h2>โหวตไล่ใครออก?</h2>${role === 'mayor' ? '<p class="hint">คุณเป็นผู้ใหญ่บ้าน โหวตของคุณนับ 2 เสียง</p>' : ''}${pick('wvote', 'vote', others, mine.vote)}<button class="btn ghost block" data-act="wvote" data-id="">${'vote' in mine && !mine.vote ? '✓ ' : ''}งดออกเสียง</button><p class="hint">โหวตแล้ว ${w.voted}/${w.need} · เปลี่ยนใจได้จนกว่าทุกคนจะโหวต</p></section>`;
       if (host) hostBtn = '<button class="btn ghost block" data-act="wskip">ปิดโหวตเลย</button>';
     }
     return `${top(tm)}<div class="split"><div class="stack lg"><h1 class="wtitle pop">${title}</h1>${main}${hostBtn}</div><div class="stack lg">${card}<section ${pp('panel', 2)}><h2>ผู้เล่น</h2>${roster}</section>${hostEnd()}</div></div>`;
@@ -398,12 +453,13 @@
   function wolfOver() {
     const w = S.wolf, host = S.host === S.me;
     if (!w) return `${top()}<div class="say pop">${ig('m-run', 'bob')}<p>กำลังสรุปผล…</p></div>`;
-    const won = !!w.winner && ((w.winner === 'wolf') === isW(w.role));
-    const head = w.winner === 'wolf' ? 'หมาป่าชนะ!' : w.winner === 'village' ? 'ชาวบ้านชนะ!' : 'โฮสต์จบเกม';
+    const won = !!w.winner && iWon(w);
+    const head = ({ wolf: 'หมาป่าชนะ!', village: 'ชาวบ้านชนะ!', killer: 'นักล่าชนะ!', lovers: 'คู่รักชนะ!' })[w.winner] || 'โฮสต์จบเกม';
     const mood = won ? ig('banner-win', 'ban') + ig('m-win', 'big') : w.winner ? ig('banner-lose', 'ban') : ig('m-think', 'big');
-    const rows = w.players.map((p) => ({ p, pl: PL(p.id) })).sort((a, b) => b.pl.score - a.pl.score).map(({ p, pl }, i) => `<li ${pp('', i + 2)}>${ROLE[p.role] ? rcard(ROLE[p.role].img, 'thumb', ROLE[p.role].n) : avatar(pl)}<span class="nm">${esc(pl.name)}${p.id === S.me ? ' <span class="mute">(คุณ)</span>' : ''}<br><span class="sub mute">${ROLE[p.role] ? ROLE[p.role].n : ''} · ${p.alive ? 'รอดถึงจบเกม' : 'ตายแล้ว'}</span></span><b class="num">${pl.score}</b></li>`).join('');
-    const recap = w.log.filter((e) => e.t === 'night' || e.t === 'vote').map((e) => `<li>${e.t === 'night' ? `คืนที่ ${e.day}: ${[e.dead ? `${esc(PL(e.dead).name)} ถูกหมาป่ากินตาย` : '', e.dead2 ? `${esc(PL(e.dead2).name)} ถูกวางยาตาย` : ''].filter(Boolean).join(' · ') || (e.saved ? 'มีคนช่วยเหยื่อไว้ได้ ไม่มีใครตาย' : 'ไม่มีใครตาย')}` : `วันที่ ${e.day}: ${e.idiot ? `${esc(PL(e.idiot).name)} คือคนซื่อ รอดตายแต่เสียสิทธิ์โหวต` : e.dead ? `${esc(PL(e.dead).name)} ถูกโหวตออก` : 'โหวตเสมอ ไม่มีใครถูกโหวตออก'}`}</li>`).join('');
-    return `${top()}<div class="split"><div class="stack lg"><div class="winhero pop" style="--i:0">${won ? ig('trophy', 'tro') : ''}${mood}${w.winner ? rcard(w.winner === 'wolf' ? 'team-wolf' : 'team-village', 'team', head) : ''}<p class="mute">คุณเป็น ${ROLE[w.role] ? ROLE[w.role].n : ''}</p>${ROLE[w.role] ? rcard(ROLE[w.role].img, 'big', ROLE[w.role].n) : ''}<h1>${head}</h1></div>${recap ? `<section ${pp('panel', 1)}><h2>เกิดอะไรขึ้นบ้าง</h2><ul class="recap">${recap}</ul></section>` : ''}</div>
+    const teamImg = w.winner === 'wolf' ? 'team-wolf' : w.winner === 'village' ? 'team-village' : w.winner === 'killer' ? 'killer' : w.winner === 'lovers' ? 'cupid' : null;
+    const rows = w.players.map((p) => ({ p, pl: PL(p.id) })).sort((a, b) => b.pl.score - a.pl.score).map(({ p, pl }, i) => `<li ${pp('', i + 2)}>${ROLE[p.role] ? `<button class="rbtn thumbbtn" data-act="rinfo" data-v="${p.role}" aria-label="ดูรายละเอียด ${ROLE[p.role].n}">${rcard(ROLE[p.role].img, 'thumb', ROLE[p.role].n)}</button>` : avatar(pl)}<span class="nm">${esc(pl.name)}${p.id === S.me ? ' <span class="mute">(คุณ)</span>' : ''}<br><span class="sub mute">${ROLE[p.role] ? ROLE[p.role].n : ''} · ${p.alive ? 'รอดถึงจบเกม' : 'ตายแล้ว'}</span></span><b class="num">${pl.score}</b></li>`).join('');
+    const recap = w.log.filter((e) => e.t === 'night' || e.t === 'vote').map((e) => { const ds = deaths(e); const txt = ds.map((d) => `${esc(PL(d.p).name)} ${WHY[d.why]}`).join(' · '); return `<li>${e.t === 'night' ? `คืนที่ ${e.day}: ${txt || (e.saved ? 'มีคนช่วยเหยื่อไว้ได้ ไม่มีใครตาย' : 'ไม่มีใครตาย')}` : `วันที่ ${e.day}: ${e.idiot ? `${esc(PL(e.idiot).name)} คือคนโง่ประจำหมู่บ้าน รอดตายแต่เสียสิทธิ์โหวต` : txt || 'โหวตเสมอ ไม่มีใครถูกโหวตออก'}`}</li>`; }).join('');
+    return `${top()}<div class="split"><div class="stack lg"><div class="winhero pop" style="--i:0">${won ? ig('trophy', 'tro') : ''}${mood}${teamImg ? rcard(teamImg, 'team', head) : ''}<p class="mute">คุณเป็น ${ROLE[w.role] ? ROLE[w.role].n : ''}</p>${ROLE[w.role] ? `<button class="rbtn" data-act="rinfo" data-v="${w.role}" aria-label="ดูรายละเอียด">${rcard(ROLE[w.role].img, 'big', ROLE[w.role].n)}</button>` : ''}<h1>${head}</h1></div>${recap ? `<section ${pp('panel', 1)}><h2>เกิดอะไรขึ้นบ้าง</h2><ul class="recap">${recap}</ul></section>` : ''}</div>
       <div class="stack lg"><section class="stack pop" style="--i:1"><h2>เฉลยบทบาท · คะแนนรวม</h2><ul class="plist">${rows}</ul></section>
       ${host ? `<div class="stack pop" style="--i:6"><button class="btn primary block" data-act="start">${ico('play')}เล่นรอบต่อไป</button><button class="btn ghost block" data-act="tolobby">ตั้งค่า / รอเพื่อนเพิ่ม</button></div>` : `<div ${pp('say', 6)}>${ig('mascot-wave')}<p>รอโฮสต์เริ่มรอบใหม่</p></div>`}</div></div>`;
   }
@@ -536,10 +592,15 @@
     wolfhide() { wolfHide = !wolfHide; last = ''; render(); },
     wrole(t) { const cur = S.settings.wolf || {}, n = S.players.length, base = Array.isArray(cur.roles) ? cur.roles : (Math.max(n, 5) >= 6 ? ['seer', 'guard'] : ['seer']), v = t.dataset.v; patch(null, { wolf: { ...cur, roles: base.includes(v) ? base.filter((x) => x !== v) : [...base, v] } }); },
     wwolves(t) { patch(null, { wolf: { ...(S.settings.wolf || {}), wolves: +t.dataset.v } }); },
+    rinfo(t) { rvBack = t.dataset.from === 'all'; rv = t.dataset.v; roleSheet(); },
+    rall() { rv = 'all'; roleSheet(); },
+    rclose() { rv = null; roleSheet(); },
+    wnpass() { FX.play('click'); act('mg_wolf_act', { p_kind: 'pass', p_target: null }); },
+    wnpeek() { if (!confirm('แอบดูหมาป่า? มีโอกาสราว 1 ใน 3 ที่จะถูกจับได้')) return; FX.play('click'); act('mg_wolf_act', { p_kind: 'peek', p_target: null }); },
     wpass() { FX.play('click'); act('mg_wolf_act', { p_kind: 'witchpass', p_target: null }); },
     wday(t) { patch(null, { wolf: { ...(S.settings.wolf || {}), day: +t.dataset.v } }); },
     wreveal() { const cur = S.settings.wolf || {}; patch(null, { wolf: { ...cur, reveal: cur.reveal === false } }); },
-    nact(t) { const k = t.dataset.k; if (!confirm(`${({ kill: 'เลือกกิน', see: 'เลือกส่อง', guard: 'เลือกปกป้อง' })[k]} ${PL(t.dataset.id).name}?`)) return; FX.play('click'); act('mg_wolf_act', { p_kind: k, p_target: t.dataset.id }); },
+    nact(t) { const k = t.dataset.k, ask = { see: 'เลือกส่อง', heal: 'ใช้ยาชุบชีวิตช่วย', poison: 'ใช้ยาพิษกับ', steal: 'ขโมยบทบาทของ' }[k]; if (ask && !confirm(`${ask} ${PL(t.dataset.id).name}?`)) return; FX.play('click'); act('mg_wolf_act', { p_kind: k, p_target: t.dataset.id }); },
     wvote(t) { FX.play('vote'); act('mg_wolf_vote', { p_target: t.dataset.id || null }); },
     wskip() { if (confirm('ข้ามไปช่วงถัดไปเลย?')) act('mg_wolf_skip'); },
     start() { act('mg_start'); }, end() { act('mg_end'); }, tolobby() { act('mg_lobby'); },
@@ -566,6 +627,7 @@
     if (t && !t.disabled && A[t.dataset.act]) { if (!/^(guess|create|join|vote|noteadd)$/.test(t.dataset.act)) FX.play('click'); A[t.dataset.act](t); }
   });
   document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && rv) { rv = null; return roleSheet(); }
     if (e.key === 'Escape' && N.open) return noteOpen(false);
     if (e.key !== 'Enter') return;
     if (e.target.id === 'guess') A.guess(); else if (e.target.id === 'code') A.join(); else if (e.target.id === 'ntext') noteAdd();
